@@ -5,6 +5,9 @@ node_modules/
 dist/
 coverage/
 
+# Prisma Client gerado (recriado com `npm run db:generate`)
+backend/src/generated/
+
 # Variáveis de ambiente (nunca subir segredos)
 .env
 .env.*
