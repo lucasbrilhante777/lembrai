@@ -1,6 +1,7 @@
 import type { ErrorRequestHandler, RequestHandler } from "express";
 import { ZodError } from "zod";
 import { AppError } from "../errors/app-error.js";
+import { Prisma } from "../generated/prisma/client.js";
 
 // Rota não encontrada: responde 404 em JSON em vez da página HTML padrão do Express.
 export const notFoundHandler: RequestHandler = (_req, res) => {
@@ -20,6 +21,13 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
       message: "Dados inválidos.",
       issues: err.issues.map((issue) => ({ path: issue.path.join("."), message: issue.message })),
     });
+    return;
+  }
+
+  // Violação de campo único (ex.: dois cadastros com o mesmo e-mail chegando ao mesmo tempo).
+  // A checagem no service pega o caso comum; o banco garante o resto.
+  if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+    res.status(409).json({ message: "Esse registro já existe." });
     return;
   }
 

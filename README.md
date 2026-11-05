@@ -55,7 +55,7 @@ O **profissional** (ex.: o barbeiro funcionário) existe no sistema para ter age
 ## Funcionalidades
 
 ### MVP (v1)
-- [ ] Cadastro e login do dono
+- [x] Cadastro e login do dono (o estabelecimento é criado junto, com slug gerado a partir do nome)
 - [ ] Cadastro do estabelecimento (nome, slug, fuso horário)
 - [ ] Serviços (nome, duração, preço)
 - [ ] Profissionais e quais serviços cada um realiza
@@ -79,7 +79,7 @@ Bloqueios e folgas, histórico do cliente, relatório de faturamento, recuperaç
 | Back-end | Node.js 22 LTS + Express + TypeScript | Mesma linguagem no front e no back |
 | Validação | Zod | Validação de entrada com tipos inferidos |
 | Banco | PostgreSQL 16 + Prisma ORM | Relacional, com constraints fortes (ver ADR 0001) |
-| Autenticação | JWT em cookie httpOnly + bcrypt | Token fora do alcance de JavaScript (XSS) |
+| Autenticação | JWT em cookie httpOnly + bcryptjs | Token fora do alcance de JavaScript (XSS); bcryptjs é o bcrypt em JS puro, sem compilação nativa no Windows/CI |
 | E-mail | Nodemailer via SMTP do Resend/Brevo | Planos gratuitos com boa entregabilidade (Gmail cai no spam) |
 | Jobs | node-cron | Suficiente para o volume do MVP (ver [Decisões técnicas](#decisões-técnicas)) |
 | Testes | Vitest + Supertest | Testes de integração da API contra um Postgres real |

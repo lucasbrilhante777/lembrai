@@ -15,6 +15,7 @@ export default defineConfig({
     env: {
       NODE_ENV: "test",
       DATABASE_URL: process.env.TEST_DATABASE_URL,
+      JWT_SECRET: "segredo-de-teste-com-pelo-menos-32-caracteres",
     },
   },
 });
