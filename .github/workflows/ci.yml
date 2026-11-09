@@ -1,0 +1,64 @@
+name: CI
+
+# Roda em todo push na main e em todo Pull Request.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Se chegar um push novo enquanto o anterior ainda roda, cancela o antigo.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (typecheck, testes e build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        working-directory: backend
+
+    # Postgres de verdade, igual ao do docker-compose: os testes rodam contra as regras reais do banco.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: lembrai
+          POSTGRES_PASSWORD: lembrai
+          POSTGRES_DB: lembrai
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U lembrai -d lembrai"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://lembrai:lembrai@localhost:5432/lembrai
+      TEST_DATABASE_URL: postgresql://lembrai:lembrai@localhost:5432/lembrai_test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Node 22 é a versão mínima suportada (ver "engines" no package.json).
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      # `npm ci` instala exatamente o que está no package-lock (e roda o prisma generate).
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Testes
+        run: npm test
+
+      - name: Build
+        run: npm run build

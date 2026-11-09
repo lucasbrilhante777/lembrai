@@ -1,5 +1,7 @@
 # Lembrai
 
+[![CI](https://github.com/lucasbrilhante777/lembrai/actions/workflows/ci.yml/badge.svg)](https://github.com/lucasbrilhante777/lembrai/actions/workflows/ci.yml)
+
 **Agendamento online + lembretes automáticos para pequenos negócios de serviço** (barbearias, salões, clínicas, personal trainers).
 
 O cliente agenda sozinho por um link público, sem criar conta. O dono vê a agenda num calendário e não precisa mais lembrar ninguém pelo WhatsApp: o sistema manda o lembrete.
@@ -83,7 +85,7 @@ Bloqueios e folgas, histórico do cliente, relatório de faturamento, recuperaç
 | E-mail | Nodemailer via SMTP do Resend/Brevo | Planos gratuitos com boa entregabilidade (Gmail cai no spam) |
 | Jobs | node-cron | Suficiente para o volume do MVP (ver [Decisões técnicas](#decisões-técnicas)) |
 | Testes | Vitest + Supertest | Testes de integração da API contra um Postgres real |
-| CI | GitHub Actions | Lint, typecheck e testes em todo PR |
+| CI | GitHub Actions | Typecheck, testes (contra um Postgres real) e build em todo push e PR |
 | Ambiente local | Docker Compose | Postgres com um comando |
 | Deploy | Vercel (front) + Render ou Railway (API) + Neon (Postgres) | Planos gratuitos ou baratos; o Railway não tem mais free tier permanente |
 
@@ -223,7 +225,7 @@ Projeto desenvolvido sozinho, em sprints semanais.
 
 - **Board:** GitHub Projects (TODO: link), uma issue por funcionalidade com critérios de aceite.
 - **Branches:** `feature/<nome>` e `fix/<nome>`, com merge na `main` só via Pull Request.
-- **Pull Requests:** checklist (testes, migration, README atualizado). O CI (lint + typecheck + testes) precisa passar para liberar o merge.
+- **Pull Requests:** checklist (testes, migration, README atualizado). O CI (typecheck + testes + build) precisa passar para liberar o merge.
 - **Commits:** [Conventional Commits](https://www.conventionalcommits.org/pt-br/) (`feat:`, `fix:`, `docs:`...).
 - **Decisões:** toda decisão técnica relevante vira um ADR em `docs/adr/`.
 
