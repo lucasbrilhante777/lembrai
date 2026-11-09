@@ -57,9 +57,9 @@ O **profissional** (ex.: o barbeiro funcionário) existe no sistema para ter age
 ### MVP (v1)
 - [x] Cadastro e login do dono (o estabelecimento é criado junto, com slug gerado a partir do nome)
 - [ ] Cadastro do estabelecimento (nome, slug, fuso horário)
-- [ ] Serviços (nome, duração, preço)
-- [ ] Profissionais e quais serviços cada um realiza
-- [ ] Horário semanal de trabalho por profissional
+- [x] Serviços (nome, duração, preço)
+- [x] Profissionais e quais serviços cada um realiza
+- [x] Horário semanal de trabalho por profissional
 - [ ] Cálculo de horários livres (respeitando duração do serviço, expediente e agendamentos existentes)
 - [ ] Página pública `/agenda/:slug`, sem o cliente criar conta
 - [ ] **Garantia de que dois clientes nunca pegam o mesmo horário**, mesmo agendando ao mesmo tempo ([ADR 0001](docs/adr/0001-prevencao-de-conflito-de-agenda.md))
