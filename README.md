@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/lucasbrilhante777/lembrai/actions/workflows/ci.yml/badge.svg)](https://github.com/lucasbrilhante777/lembrai/actions/workflows/ci.yml)
 
+> 🚧 **Em desenvolvimento.** O back-end já tem autenticação, cadastro de serviços, profissionais e horários, além da regra anti-conflito de agenda, tudo com testes. Próximos passos: cálculo de horários livres, página pública de agendamento e o front-end. Acompanhe pela [lista de funcionalidades](#funcionalidades).
+
 **Agendamento online + lembretes automáticos para pequenos negócios de serviço** (barbearias, salões, clínicas, personal trainers).
 
 O cliente agenda sozinho por um link público, sem criar conta. O dono vê a agenda num calendário e não precisa mais lembrar ninguém pelo WhatsApp: o sistema manda o lembrete.
