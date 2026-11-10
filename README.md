@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/lucasbrilhante777/lembrai/actions/workflows/ci.yml/badge.svg)](https://github.com/lucasbrilhante777/lembrai/actions/workflows/ci.yml)
 
-> 🚧 **Em desenvolvimento.** O back-end já tem autenticação, cadastro de serviços, profissionais e horários, além da regra anti-conflito de agenda, tudo com testes. Próximos passos: cálculo de horários livres, página pública de agendamento e o front-end. Acompanhe pela [lista de funcionalidades](#funcionalidades).
+> 🚧 **Em desenvolvimento.** A API do MVP está completa e testada: autenticação, serviços, profissionais e horários, cálculo de horários livres com fuso horário, agendamento público com garantia anti-conflito, e-mails de confirmação e lembrete, cancelamento pelo link e agenda do dono. Próximos passos: conta demo, front-end e deploy. Acompanhe pela [lista de funcionalidades](#funcionalidades).
 
 **Agendamento online + lembretes automáticos para pequenos negócios de serviço** (barbearias, salões, clínicas, personal trainers).
 
@@ -67,7 +67,7 @@ O **profissional** (ex.: o barbeiro funcionário) existe no sistema para ter age
 - [x] Cálculo de horários livres (respeitando duração do serviço, expediente e agendamentos existentes)
 - [ ] Página pública `/agenda/:slug`, sem o cliente criar conta (API pronta; falta o front-end)
 - [x] **Garantia de que dois clientes nunca pegam o mesmo horário**, mesmo agendando ao mesmo tempo ([ADR 0001](docs/adr/0001-prevencao-de-conflito-de-agenda.md))
-- [ ] Calendário do dono (visão diária e semanal) com mudança de status: concluído, falta, cancelado
+- [x] Calendário do dono (visão diária e semanal) com mudança de status: concluído, falta, cancelado (API pronta; falta a tela)
 - [x] E-mail de confirmação ao agendar e lembrete por e-mail 24h antes (envio único, mesmo com várias instâncias)
 - [x] Cancelamento pelo cliente através do link no e-mail (API pronta; falta a página no front-end)
 

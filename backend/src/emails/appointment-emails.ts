@@ -16,6 +16,8 @@ export type AppointmentEmailData = {
   timezone: string;
   priceCents: number;
   cancelUrl: string;
+  /** Página pública do estabelecimento, para marcar de novo. */
+  bookingUrl: string;
 };
 
 export function confirmationEmail(data: AppointmentEmailData): EmailMessage {
@@ -61,6 +63,29 @@ export function reminderEmail(data: AppointmentEmailData): EmailMessage {
       detailsText(data, when),
       "",
       `Não vai conseguir ir? Cancele aqui e libere o horário: ${data.cancelUrl}`,
+    ].join("\n"),
+  };
+}
+
+export function canceledByEstablishmentEmail(data: AppointmentEmailData): EmailMessage {
+  const when = formatWhen(data.startAt, data.timezone);
+  return {
+    to: data.to,
+    subject: `Agendamento cancelado: ${data.serviceName} em ${data.establishmentName}, ${formatShortWhen(data.startAt, data.timezone)}`,
+    html: layout(`
+      <p>Olá, ${escapeHtml(data.customerName)}.</p>
+      <p><strong>${escapeHtml(data.establishmentName)}</strong> precisou cancelar o seu horário:</p>
+      ${detailsHtml(data, when)}
+      <p>Pedimos desculpas pelo transtorno.
+        <a href="${escapeHtml(data.bookingUrl)}">Escolha um novo horário aqui</a>.</p>
+    `),
+    text: [
+      `Olá, ${data.customerName}.`,
+      "",
+      `${data.establishmentName} precisou cancelar o seu horário:`,
+      detailsText(data, when),
+      "",
+      `Pedimos desculpas pelo transtorno. Escolha um novo horário aqui: ${data.bookingUrl}`,
     ].join("\n"),
   };
 }

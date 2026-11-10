@@ -6,6 +6,7 @@ import { env } from "./config/env.js";
 import { ensureAuthenticated } from "./middlewares/ensure-authenticated.js";
 import { errorHandler, notFoundHandler } from "./middlewares/error-handler.js";
 import { publicRateLimit } from "./middlewares/rate-limit.js";
+import { appointmentsRoutes } from "./routes/appointments.routes.js";
 import { authRoutes } from "./routes/auth.routes.js";
 import { healthRoutes } from "./routes/health.routes.js";
 import { professionalsRoutes } from "./routes/professionals.routes.js";
@@ -29,6 +30,7 @@ export function createApp() {
   // Rotas do painel: o login é exigido aqui, uma vez, para o grupo inteiro.
   app.use("/services", ensureAuthenticated, servicesRoutes);
   app.use("/professionals", ensureAuthenticated, professionalsRoutes);
+  app.use("/appointments", ensureAuthenticated, appointmentsRoutes);
 
   app.use(notFoundHandler);
   app.use(errorHandler);
