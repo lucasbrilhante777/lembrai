@@ -7,6 +7,8 @@ export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
+    // Cria a conta demo (ver src/demo/seed-demo.ts). Também roda após `prisma migrate reset`.
+    seed: "tsx --env-file-if-exists=.env prisma/seed.ts",
   },
   datasource: {
     url: process.env["DATABASE_URL"],

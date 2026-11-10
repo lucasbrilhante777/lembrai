@@ -2,14 +2,14 @@
 
 [![CI](https://github.com/lucasbrilhante777/lembrai/actions/workflows/ci.yml/badge.svg)](https://github.com/lucasbrilhante777/lembrai/actions/workflows/ci.yml)
 
-> 🚧 **Em desenvolvimento.** A API do MVP está completa e testada: autenticação, serviços, profissionais e horários, cálculo de horários livres com fuso horário, agendamento público com garantia anti-conflito, e-mails de confirmação e lembrete, cancelamento pelo link e agenda do dono. Próximos passos: conta demo, front-end e deploy. Acompanhe pela [lista de funcionalidades](#funcionalidades).
+> 🚧 **Em desenvolvimento.** A API do MVP está completa e testada: autenticação, serviços, profissionais e horários, cálculo de horários livres com fuso horário, agendamento público com garantia anti-conflito, e-mails de confirmação e lembrete, cancelamento pelo link e agenda do dono. Já tem conta demo com dados realistas. Próximos passos: front-end e deploy. Acompanhe pela [lista de funcionalidades](#funcionalidades).
 
 **Agendamento online + lembretes automáticos para pequenos negócios de serviço** (barbearias, salões, clínicas, personal trainers).
 
 O cliente agenda sozinho por um link público, sem criar conta. O dono vê a agenda num calendário e não precisa mais lembrar ninguém pelo WhatsApp: o sistema manda o lembrete.
 
 > 🔗 **Demo:** TODO (link do deploy)
-> 👤 **Conta demo:** TODO (e-mail / senha da conta de demonstração)
+> 👤 **Conta demo:** `demo@example.com` / `lembrai-demo`
 > 📅 **Página pública de exemplo:** TODO (`/agenda/barbearia-demo`)
 
 ![Fluxo de agendamento](docs/img/demo.gif) <!-- TODO: gravar o GIF do fluxo principal -->
@@ -195,10 +195,11 @@ cd backend
 npm install
 cp .env.example .env
 npx prisma migrate dev
+npm run db:seed          # cria a conta demo
 npm run dev
 ```
 
-> A conta demo com dados de exemplo (`npx prisma db seed`) ainda vai ser criada.
+O `db:seed` cria a **Barbearia Demo** (login `demo@example.com` / `lembrai-demo`): 4 serviços, 3 profissionais com expediente e cerca de 700 agendamentos de duas semanas antes a duas semanas depois de hoje, com todos os status. Pode rodar quantas vezes quiser, porque ele recria só a conta demo. Os clientes fictícios usam `@example.com` (domínio reservado) e já vêm com o lembrete marcado como enviado, então nenhum e-mail sai para eles.
 
 Variáveis do `.env` (o `.env.example` já vem pronto para desenvolvimento):
 
