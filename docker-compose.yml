@@ -16,5 +16,14 @@ services:
       timeout: 5s
       retries: 10
 
+  # Caixa de e-mail falsa para desenvolvimento: a API envia por SMTP para cá e nada sai para a internet.
+  # Os e-mails aparecem em http://localhost:8025
+  mail:
+    image: axllent/mailpit:latest
+    container_name: lembrai-mail
+    ports:
+      - "1025:1025" # SMTP
+      - "8025:8025" # interface web
+
 volumes:
   lembrai-db-data:

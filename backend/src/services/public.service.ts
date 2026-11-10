@@ -4,6 +4,7 @@ import { AppError } from "../errors/app-error.js";
 import { isAppointmentOverlapError } from "../lib/db-errors.js";
 import { prisma } from "../lib/prisma.js";
 import type { AvailabilityQuery, CreateAppointmentInput } from "../schemas/public.schemas.js";
+import * as notifications from "./notifications.service.js";
 import {
   addDays,
   dayOfWeek,
@@ -107,8 +108,9 @@ export async function createAppointment(slug: string, input: CreateAppointmentIn
     );
   }
 
+  let appointment;
   try {
-    const appointment = await prisma.appointment.create({
+    appointment = await prisma.appointment.create({
       data: {
         establishmentId: establishment.id,
         professionalId: professional.id,
@@ -120,20 +122,6 @@ export async function createAppointment(slug: string, input: CreateAppointmentIn
         cancelToken: randomBytes(32).toString("base64url"), // 256 bits: impossível de adivinhar
       },
     });
-
-    // O cancelToken NÃO volta na resposta: ele só vai por e-mail para o cliente.
-    return {
-      id: appointment.id,
-      startAt: appointment.startAt.toISOString(),
-      endAt: appointment.endAt.toISOString(),
-      date,
-      time: formatLocalTime(appointment.startAt, timezone),
-      timezone,
-      establishment: { name: establishment.name },
-      service: { name: service.name, durationMinutes: service.durationMinutes },
-      professional: { name: professional.name },
-      priceCents: appointment.priceCentsAtBooking,
-    };
   } catch (err) {
     // Outra pessoa pegou o mesmo horário entre a nossa checagem e o INSERT.
     // A constraint do banco barrou (ADR 0001); aqui só traduzimos para uma resposta amigável.
@@ -142,6 +130,26 @@ export async function createAppointment(slug: string, input: CreateAppointmentIn
     }
     throw err;
   }
+
+  // O horário já está garantido no banco. Se o e-mail falhar (SMTP fora do ar, por exemplo),
+  // NÃO desfazemos o agendamento: só registramos o erro. O lembrete de 24h ainda vai tentar avisar.
+  await notifications
+    .sendConfirmation(appointment.id)
+    .catch((err: unknown) => console.error("Falha ao enviar e-mail de confirmação:", err));
+
+  // O cancelToken NÃO volta na resposta: ele só vai por e-mail para o cliente.
+  return {
+    id: appointment.id,
+    startAt: appointment.startAt.toISOString(),
+    endAt: appointment.endAt.toISOString(),
+    date,
+    time: formatLocalTime(appointment.startAt, timezone),
+    timezone,
+    establishment: { name: establishment.name },
+    service: { name: service.name, durationMinutes: service.durationMinutes },
+    professional: { name: professional.name },
+    priceCents: appointment.priceCentsAtBooking,
+  };
 }
 
 // ---------------------------------------------------------------------------
