@@ -65,8 +65,8 @@ O **profissional** (ex.: o barbeiro funcionário) existe no sistema para ter age
 - [x] Profissionais e quais serviços cada um realiza
 - [x] Horário semanal de trabalho por profissional
 - [x] Cálculo de horários livres (respeitando duração do serviço, expediente e agendamentos existentes)
-- [ ] Página pública `/agenda/:slug`, sem o cliente criar conta
-- [ ] **Garantia de que dois clientes nunca pegam o mesmo horário**, mesmo agendando ao mesmo tempo ([ADR 0001](docs/adr/0001-prevencao-de-conflito-de-agenda.md))
+- [ ] Página pública `/agenda/:slug`, sem o cliente criar conta (API pronta; falta o front-end)
+- [x] **Garantia de que dois clientes nunca pegam o mesmo horário**, mesmo agendando ao mesmo tempo ([ADR 0001](docs/adr/0001-prevencao-de-conflito-de-agenda.md))
 - [ ] Calendário do dono (visão diária e semanal) com mudança de status: concluído, falta, cancelado
 - [ ] Lembrete por e-mail 24h antes
 - [ ] Cancelamento pelo cliente através do link no e-mail

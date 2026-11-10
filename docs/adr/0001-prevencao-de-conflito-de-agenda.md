@@ -48,7 +48,9 @@ Na API, a violação da constraint (SQLSTATE `23P01`, `exclusion_violation`) é 
 **Negativas**
 - Exige SQL manual numa migration, fora do que o Prisma gera.
 - Prende o projeto ao PostgreSQL (aceitável: o banco já é uma escolha fixa).
-- O erro chega ao Prisma como erro genérico do banco, então é preciso identificar o código `23P01` no tratamento de erros.
+- O Prisma não tem um código próprio para essa violação. Com o driver adapter (Prisma 7), o SQLSTATE original vem em `err.meta.driverAdapterError.cause.originalCode`, e é por ele que identificamos o `23P01` (`backend/src/lib/db-errors.ts`), não pelo texto da mensagem.
 
-**Como testar**
-- Teste de integração que dispara duas requisições simultâneas (`Promise.all`) para o mesmo profissional e horário. Exatamente uma deve receber `201` e a outra `409`.
+**Como testar** (`backend/tests/appointment-overlap.test.ts` e `backend/tests/booking.test.ts`)
+- Direto no banco: inserir dois agendamentos sobrepostos e confirmar que o segundo falha, inclusive com dois `INSERT` simultâneos.
+- Pela API: duas requisições simultâneas (`Promise.all`) para o mesmo horário. Exatamente uma recebe `201` e a outra `409`.
+- Caminho da constraint isolado: um teste faz a checagem da aplicação "não enxergar" o agendamento existente, forçando o `INSERT` a bater na constraint, e confirma o `409` (e não `500`).

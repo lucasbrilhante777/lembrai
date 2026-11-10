@@ -4,40 +4,19 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "../src/app.js";
 import { prisma } from "../src/lib/prisma.js";
 import { MAX_DAYS_AHEAD } from "../src/services/public.service.js";
-import { addDays, dayOfWeek, localDateTimeToUtc, localToday } from "../src/utils/zoned-date.js";
-import { createLoggedOwner } from "./helpers/auth.js";
+import { addDays, localDateTimeToUtc, localToday } from "../src/utils/zoned-date.js";
 import { resetDatabase } from "./helpers/db.js";
+import { type EstablishmentSetup, TZ, date, setupEstablishment as setup } from "./helpers/establishment.js";
 
 const app = createApp();
-const TZ = "America/Recife"; // fuso usado pelo createLoggedOwner
-
-// Uma data sempre no futuro (daqui a 7 dias), para o teste não depender do dia em que roda.
-const date = addDays(localToday(TZ, new Date()), 7);
-
-type Agent = Awaited<ReturnType<typeof createLoggedOwner>>["agent"];
-
-// Monta um estabelecimento com 1 serviço de 30 min e 1 profissional que trabalha das 09:00 às 11:00 em `date`.
-async function setupEstablishment() {
-  const owner = await createLoggedOwner(app);
-  const { body: service } = await owner.agent
-    .post("/services")
-    .send({ name: "Corte", durationMinutes: 30, priceCents: 3500 });
-  const { body: professional } = await owner.agent
-    .post("/professionals")
-    .send({ name: "João", serviceIds: [service.id] });
-  await owner.agent
-    .put(`/professionals/${professional.id}/working-hours`)
-    .send({ workingHours: [{ dayOfWeek: dayOfWeek(date), startTime: "09:00", endTime: "11:00" }] });
-
-  return { ...owner, serviceId: service.id as string, professionalId: professional.id as string };
-}
+const setupEstablishment = () => setup(app);
 
 function availabilityUrl(slug: string, params: Record<string, string>) {
   return `/public/establishments/${slug}/availability?${new URLSearchParams(params)}`;
 }
 
 async function createAppointment(
-  setup: Awaited<ReturnType<typeof setupEstablishment>>,
+  setup: EstablishmentSetup,
   start: string,
   end: string,
   status: "SCHEDULED" | "CANCELED" = "SCHEDULED",

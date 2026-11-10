@@ -1,5 +1,5 @@
 import type { RequestHandler } from "express";
-import { availabilityQuerySchema } from "../schemas/public.schemas.js";
+import { availabilityQuerySchema, createAppointmentSchema } from "../schemas/public.schemas.js";
 import * as publicService from "../services/public.service.js";
 
 export const getEstablishment: RequestHandler<{ slug: string }> = async (req, res) => {
@@ -9,4 +9,9 @@ export const getEstablishment: RequestHandler<{ slug: string }> = async (req, re
 export const getAvailability: RequestHandler<{ slug: string }> = async (req, res) => {
   const query = availabilityQuerySchema.parse(req.query);
   res.json(await publicService.getAvailability(req.params.slug, query));
+};
+
+export const createAppointment: RequestHandler<{ slug: string }> = async (req, res) => {
+  const input = createAppointmentSchema.parse(req.body);
+  res.status(201).json(await publicService.createAppointment(req.params.slug, input));
 };

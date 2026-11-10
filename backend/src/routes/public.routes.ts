@@ -6,3 +6,4 @@ export const publicRoutes = Router();
 
 publicRoutes.get("/establishments/:slug", publicController.getEstablishment);
 publicRoutes.get("/establishments/:slug/availability", publicController.getAvailability);
+publicRoutes.post("/establishments/:slug/appointments", publicController.createAppointment);
