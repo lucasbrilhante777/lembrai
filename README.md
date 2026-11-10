@@ -68,8 +68,8 @@ O **profissional** (ex.: o barbeiro funcionário) existe no sistema para ter age
 - [ ] Página pública `/agenda/:slug`, sem o cliente criar conta (API pronta; falta o front-end)
 - [x] **Garantia de que dois clientes nunca pegam o mesmo horário**, mesmo agendando ao mesmo tempo ([ADR 0001](docs/adr/0001-prevencao-de-conflito-de-agenda.md))
 - [ ] Calendário do dono (visão diária e semanal) com mudança de status: concluído, falta, cancelado
-- [ ] Lembrete por e-mail 24h antes
-- [ ] Cancelamento pelo cliente através do link no e-mail
+- [x] E-mail de confirmação ao agendar e lembrete por e-mail 24h antes (envio único, mesmo com várias instâncias)
+- [x] Cancelamento pelo cliente através do link no e-mail (API pronta; falta a página no front-end)
 
 ### v1.1+
 Bloqueios e folgas, histórico do cliente, relatório de faturamento, recuperação de senha, planos Free/Pro. Detalhes no [roadmap](#roadmap).
@@ -181,12 +181,13 @@ Decisões menores, sem ADR próprio:
 
 ### Pré-requisitos
 - Node.js 22+
-- Docker (para o Postgres)
+- Docker (para o Postgres e a caixa de e-mail de teste)
 
-### Banco
+### Banco e e-mail
 ```bash
 docker compose up -d
 ```
+Sobe o Postgres e o [Mailpit](https://mailpit.axllent.org/), uma caixa de e-mail falsa: todo e-mail que a API envia em desenvolvimento aparece em **http://localhost:8025**, e nada sai para a internet.
 
 ### Back-end
 ```bash
@@ -194,19 +195,21 @@ cd backend
 npm install
 cp .env.example .env
 npx prisma migrate dev
-npx prisma db seed       # cria a conta demo e dados de exemplo
 npm run dev
 ```
 
-Variáveis do `.env`:
+> A conta demo com dados de exemplo (`npx prisma db seed`) ainda vai ser criada.
+
+Variáveis do `.env` (o `.env.example` já vem pronto para desenvolvimento):
 
 | Variável | Exemplo |
 |---|---|
 | `DATABASE_URL` | `postgresql://lembrai:lembrai@localhost:5432/lembrai` |
 | `JWT_SECRET` | string longa e aleatória |
-| `FRONTEND_URL` | `http://localhost:5173` |
-| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` | credenciais do Resend/Brevo |
+| `FRONTEND_URL` | `http://localhost:5173` (usado também no link de cancelamento dos e-mails) |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_SECURE` / `SMTP_USER` / `SMTP_PASS` | Mailpit em dev (`localhost:1025`); credenciais do Resend/Brevo em produção |
 | `EMAIL_FROM` | `Lembrai <nao-responda@seudominio.com>` |
+| `JOBS_ENABLED` | `true` liga o job de lembretes (a cada 15 min) |
 
 ### Front-end
 ```bash

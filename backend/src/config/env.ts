@@ -8,6 +8,17 @@ const envSchema = z.object({
   FRONTEND_URL: z.url().default("http://localhost:5173"),
   DATABASE_URL: z.url(),
   JWT_SECRET: z.string().min(32, "JWT_SECRET precisa ter pelo menos 32 caracteres."),
+
+  // E-mail. Os padrões apontam para o Mailpit do docker-compose (desenvolvimento).
+  SMTP_HOST: z.string().default("localhost"),
+  SMTP_PORT: z.coerce.number().int().positive().default(1025),
+  SMTP_SECURE: z.stringbool().default(false), // true para porta 465 (TLS direto)
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  EMAIL_FROM: z.string().default("Lembrai <nao-responda@lembrai.local>"),
+
+  // Liga o job de lembretes junto com a API. Dá para desligar (false) e rodar a API sozinha.
+  JOBS_ENABLED: z.stringbool().default(true),
 });
 
 const parsed = envSchema.safeParse(process.env);
