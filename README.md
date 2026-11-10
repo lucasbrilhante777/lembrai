@@ -11,6 +11,7 @@ O cliente agenda sozinho por um link público, sem criar conta. O dono vê a age
 > 🔗 **Demo:** TODO (link do deploy)
 > 👤 **Conta demo:** `demo@example.com` / `lembrai-demo`
 > 📅 **Página pública de exemplo:** TODO (`/agenda/barbearia-demo`)
+> 📚 **[Guia de estudo](docs/guia-de-estudo.md):** os conceitos por trás do projeto (concorrência, fuso horário, segurança, testes, CI) e como cada um aparece no código
 
 ![Fluxo de agendamento](docs/img/demo.gif) <!-- TODO: gravar o GIF do fluxo principal -->
 
