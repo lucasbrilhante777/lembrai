@@ -5,7 +5,12 @@ import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 
 /** Data de hoje no fuso informado, ex.: "2026-11-10". */
 export function localToday(timezone: string, now: Date) {
-  return formatInTimeZone(now, timezone, "yyyy-MM-dd");
+  return localDateOf(now, timezone);
+}
+
+/** Data local de um instante, ex.: 2026-11-11T01:00Z em America/Recife = "2026-11-10". */
+export function localDateOf(instant: Date, timezone: string) {
+  return formatInTimeZone(instant, timezone, "yyyy-MM-dd");
 }
 
 /** "2026-11-30" + 1 = "2026-12-01". Data de calendário, sem fuso envolvido. */
