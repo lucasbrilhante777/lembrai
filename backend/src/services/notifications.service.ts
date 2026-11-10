@@ -1,5 +1,10 @@
 import { env } from "../config/env.js";
-import { type AppointmentEmailData, confirmationEmail, reminderEmail } from "../emails/appointment-emails.js";
+import {
+  type AppointmentEmailData,
+  canceledByEstablishmentEmail,
+  confirmationEmail,
+  reminderEmail,
+} from "../emails/appointment-emails.js";
 import { mailer } from "../lib/mailer.js";
 import { prisma } from "../lib/prisma.js";
 
@@ -14,6 +19,10 @@ export async function sendConfirmation(appointmentId: string) {
 
 export async function sendReminder(appointmentId: string) {
   await mailer.send(reminderEmail(await loadEmailData(appointmentId)));
+}
+
+export async function sendCancellationByEstablishment(appointmentId: string) {
+  await mailer.send(canceledByEstablishmentEmail(await loadEmailData(appointmentId)));
 }
 
 async function loadEmailData(appointmentId: string): Promise<AppointmentEmailData> {
@@ -32,5 +41,6 @@ async function loadEmailData(appointmentId: string): Promise<AppointmentEmailDat
     timezone: appointment.establishment.timezone,
     priceCents: appointment.priceCentsAtBooking,
     cancelUrl: cancelUrl(appointment.cancelToken),
+    bookingUrl: `${env.FRONTEND_URL}/agenda/${appointment.establishment.slug}`,
   };
 }
