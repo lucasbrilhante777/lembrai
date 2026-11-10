@@ -66,7 +66,7 @@ O **profissional** (ex.: o barbeiro funcionário) existe no sistema para ter age
 - [x] Profissionais e quais serviços cada um realiza
 - [x] Horário semanal de trabalho por profissional
 - [x] Cálculo de horários livres (respeitando duração do serviço, expediente e agendamentos existentes)
-- [ ] Página pública `/agenda/:slug`, sem o cliente criar conta (API pronta; falta o front-end)
+- [x] Página pública `/agenda/:slug`, sem o cliente criar conta
 - [x] **Garantia de que dois clientes nunca pegam o mesmo horário**, mesmo agendando ao mesmo tempo ([ADR 0001](docs/adr/0001-prevencao-de-conflito-de-agenda.md))
 - [x] Calendário do dono (visão diária e semanal) com mudança de status: concluído, falta, cancelado (API pronta; falta a tela)
 - [x] E-mail de confirmação ao agendar e lembrete por e-mail 24h antes (envio único, mesmo com várias instâncias)
@@ -79,7 +79,8 @@ Bloqueios e folgas, histórico do cliente, relatório de faturamento, recuperaç
 
 | Camada | Tecnologia | Por quê |
 |---|---|---|
-| Front-end | React + TypeScript + Vite | Padrão de mercado, build rápido |
+| Front-end | React + TypeScript + Vite + React Router | Padrão de mercado, build rápido |
+| Dados no front | TanStack Query | Cache, "carregando" e "erro" das chamadas à API sem código repetido |
 | Estilização | TailwindCSS | Produtividade sem CSS solto |
 | Back-end | Node.js 22 LTS + Express + TypeScript | Mesma linguagem no front e no back |
 | Validação | Zod | Validação de entrada com tipos inferidos |
@@ -87,8 +88,9 @@ Bloqueios e folgas, histórico do cliente, relatório de faturamento, recuperaç
 | Autenticação | JWT em cookie httpOnly + bcryptjs | Token fora do alcance de JavaScript (XSS); bcryptjs é o bcrypt em JS puro, sem compilação nativa no Windows/CI |
 | E-mail | Nodemailer via SMTP do Resend/Brevo | Planos gratuitos com boa entregabilidade (Gmail cai no spam) |
 | Jobs | node-cron | Suficiente para o volume do MVP (ver [Decisões técnicas](#decisões-técnicas)) |
-| Testes | Vitest + Supertest | Testes de integração da API contra um Postgres real |
-| CI | GitHub Actions | Typecheck, testes (contra um Postgres real) e build em todo push e PR |
+| Testes | Vitest + Supertest (API) e Vitest + Testing Library (front) | Integração da API contra um Postgres real; telas testadas como o usuário usa |
+| Lint (front) | oxlint | Linter rápido, padrão do template do Vite |
+| CI | GitHub Actions | Back: typecheck, testes (Postgres real) e build. Front: lint, typecheck, testes e build |
 | Ambiente local | Docker Compose | Postgres com um comando |
 | Deploy | Vercel (front) + Render ou Railway (API) + Neon (Postgres) | Planos gratuitos ou baratos; o Railway não tem mais free tier permanente |
 
@@ -98,11 +100,11 @@ Bloqueios e folgas, histórico do cliente, relatório de faturamento, recuperaç
 lembrai/
 ├── frontend/                 # React + TypeScript + Vite
 │   ├── src/
-│   │   ├── components/
-│   │   ├── pages/
-│   │   ├── hooks/
-│   │   └── services/         # chamadas à API
-│   ├── .env.example
+│   │   ├── components/       # peças visuais reaproveitadas
+│   │   ├── features/         # uma pasta por fluxo (ex.: booking = agendamento público)
+│   │   ├── lib/              # cliente HTTP e formatação
+│   │   └── pages/
+│   ├── vite.config.ts        # proxy /api -> API local
 │   └── package.json
 │
 ├── backend/                  # Node.js + Express + TypeScript
@@ -217,13 +219,16 @@ Variáveis do `.env` (o `.env.example` já vem pronto para desenvolvimento):
 ```bash
 cd frontend
 npm install
-cp .env.example .env     # VITE_API_URL=http://localhost:3333
 npm run dev
 ```
+Abra http://localhost:5173/agenda/barbearia-demo (com a API rodando e o seed feito).
+
+O front sempre chama `/api/...`, e em desenvolvimento o Vite repassa essas chamadas para a API em `localhost:3333` (veja `vite.config.ts`). Assim, front e API ficam na mesma origem e o cookie de login funciona sem CORS para outro domínio. Em produção, a Vercel faz o mesmo papel.
 
 ### Testes
 ```bash
 cd backend && npm test
+cd frontend && npm test
 ```
 
 ## Fluxo de trabalho
