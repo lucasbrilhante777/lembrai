@@ -6,6 +6,8 @@ import { RequireAuth } from "./features/auth/RequireAuth.tsx";
 import { BookingPage } from "./features/booking/BookingPage.tsx";
 import { CancelPage } from "./features/cancel/CancelPage.tsx";
 import { PanelLayout } from "./features/panel/PanelLayout.tsx";
+import { ProfessionalsPage } from "./features/professionals/ProfessionalsPage.tsx";
+import { ServicesPage } from "./features/services/ServicesPage.tsx";
 import { HomePage } from "./pages/HomePage.tsx";
 import { NotFoundPage } from "./pages/NotFoundPage.tsx";
 
@@ -24,6 +26,8 @@ export function App() {
       <Route element={<RequireAuth />}>
         <Route path="/painel" element={<PanelLayout />}>
           <Route index element={<AgendaPage />} />
+          <Route path="servicos" element={<ServicesPage />} />
+          <Route path="profissionais" element={<ProfessionalsPage />} />
         </Route>
       </Route>
 

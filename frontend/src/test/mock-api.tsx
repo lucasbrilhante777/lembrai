@@ -11,6 +11,16 @@ import { handleQueryError } from "../lib/query-client.ts";
 type Reply = { status: number; body?: unknown };
 type Handler = Reply | ((body: unknown, url: URL) => Reply);
 
+// Rotas chamadas pela tela que o teste não simulou. O setup.ts reprova o teste se sobrar alguma:
+// sem isso, o erro ficaria "engolido" pelo React Query e o teste passaria sem testar de verdade.
+let unmatchedRoutes: string[] = [];
+
+export function takeUnmatchedRoutes() {
+  const found = unmatchedRoutes;
+  unmatchedRoutes = [];
+  return found;
+}
+
 export function mockApi(routes: Record<string, Handler>) {
   const fetchMock = vi.fn(async (input: string, init?: RequestInit) => {
     const url = new URL(input, "http://localhost");
@@ -22,7 +32,10 @@ export function mockApi(routes: Record<string, Handler>) {
       `${method} ${path}` in routes
         ? `${method} ${path}`
         : Object.keys(routes).find((k) => k.endsWith("*") && `${method} ${path}`.startsWith(k.slice(0, -1)));
-    if (!key) throw new Error(`Rota não simulada no teste: ${method} ${path}`);
+    if (!key) {
+      unmatchedRoutes.push(`${method} ${path}`);
+      throw new Error(`Rota não simulada no teste: ${method} ${path}`);
+    }
 
     const handler = routes[key]!;
     const body = init?.body ? JSON.parse(init.body as string) : undefined;

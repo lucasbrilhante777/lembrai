@@ -1,16 +1,13 @@
 import { useState } from "react";
+import { Link } from "react-router";
 import { Alert, Card, Spinner } from "../../components/ui.tsx";
 import { ApiError } from "../../lib/api.ts";
 import { addDays, formatLongDate, formatPrice, formatWeekRange, localToday, startOfWeek } from "../../lib/format.ts";
 import { useNow } from "../../lib/use-now.ts";
 import { useAuthenticatedSession } from "../auth/api.ts";
-import {
-  type Appointment,
-  type OwnerTargetStatus,
-  useAppointments,
-  useProfessionalOptions,
-  useUpdateStatus,
-} from "./api.ts";
+import { useProfessionals } from "../professionals/api.ts";
+import { useServices } from "../services/api.ts";
+import { type Appointment, type OwnerTargetStatus, useAppointments, useUpdateStatus } from "./api.ts";
 import { AppointmentCard } from "./AppointmentCard.tsx";
 
 type View = "day" | "week";
@@ -29,7 +26,8 @@ export function AgendaPage() {
   const to = view === "day" ? anchor : addDays(from, 6);
 
   const agenda = useAppointments({ from, to, professionalId });
-  const professionals = useProfessionalOptions();
+  const professionals = useProfessionals();
+  const services = useServices();
   const updateStatus = useUpdateStatus();
   const statusError = updateStatus.error instanceof ApiError ? updateStatus.error.message : null;
 
@@ -92,6 +90,15 @@ export function AgendaPage() {
           </select>
         </div>
       </div>
+
+      {services.data && professionals.data && (
+        <GettingStarted
+          hasServices={services.data.some((s) => s.active)}
+          hasReadyProfessional={professionals.data.some(
+            (p) => p.active && p.serviceIds.length > 0 && p.workingHours.length > 0,
+          )}
+        />
+      )}
 
       {statusError && <Alert>{statusError}</Alert>}
 
@@ -185,6 +192,26 @@ function Summary({ appointments }: { appointments: Appointment[] }) {
         </Card>
       ))}
     </dl>
+  );
+}
+
+// Conta nova: mostra o que falta para a página pública começar a ter horários. Some quando estiver tudo pronto.
+function GettingStarted({ hasServices, hasReadyProfessional }: { hasServices: boolean; hasReadyProfessional: boolean }) {
+  if (hasServices && hasReadyProfessional) return null;
+  return (
+    <Card className="border-teal-200 bg-teal-50">
+      <h2 className="font-semibold text-teal-900">Primeiros passos</h2>
+      <p className="mt-1 text-sm text-teal-900">Para seus clientes conseguirem agendar:</p>
+      <ol className="mt-2 list-inside list-decimal space-y-1 text-sm text-teal-900">
+        <li className={hasServices ? "line-through opacity-60" : ""}>
+          Cadastre seus <Link to="/painel/servicos" className="font-medium underline">serviços</Link>
+        </li>
+        <li className={hasReadyProfessional ? "line-through opacity-60" : ""}>
+          Cadastre um <Link to="/painel/profissionais" className="font-medium underline">profissional</Link>, com os serviços que
+          ele faz e os horários de trabalho
+        </li>
+      </ol>
+    </Card>
   );
 }
 

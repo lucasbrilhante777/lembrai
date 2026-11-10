@@ -38,7 +38,22 @@ const concluido = appointment("a3", "COMPLETED", new Date(Date.now() - 4 * HOUR)
 function loggedInRoutes(extra: Parameters<typeof mockApi>[0] = {}) {
   return {
     "GET /auth/me": { status: 200, body: session },
-    "GET /professionals": { status: 200, body: [{ id: "p1", name: "João", active: true }] },
+    "GET /professionals": {
+      status: 200,
+      body: [
+        {
+          id: "p1",
+          name: "João",
+          active: true,
+          serviceIds: ["s1"],
+          workingHours: [{ dayOfWeek: 1, startTime: "09:00", endTime: "18:00" }],
+        },
+      ],
+    },
+    "GET /services": {
+      status: 200,
+      body: [{ id: "s1", name: "Corte", durationMinutes: 30, priceCents: 3500, active: true }],
+    },
     "GET /appointments": {
       status: 200,
       body: { from: today, to: today, timezone: TZ, appointments: [concluido, passado, futuro] },
@@ -96,6 +111,30 @@ describe("login e proteção do painel", () => {
 
     expect(await screen.findByRole("heading", { name: "Entrar no painel" })).toBeInTheDocument();
     expect(calls(fetchMock)).toContain("POST /auth/logout");
+  });
+});
+
+describe("primeiros passos", () => {
+  it("conta nova sem serviços nem profissionais vê o que falta fazer", async () => {
+    mockApi(
+      loggedInRoutes({
+        "GET /services": { status: 200, body: [] },
+        "GET /professionals": { status: 200, body: [] },
+        "GET /appointments": { status: 200, body: { from: today, to: today, timezone: TZ, appointments: [] } },
+      }),
+    );
+    renderApp("/painel");
+
+    expect(await screen.findByRole("heading", { name: "Primeiros passos" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "serviços" })).toHaveAttribute("href", "/painel/servicos");
+  });
+
+  it("some quando já há serviço e profissional com horários", async () => {
+    mockApi(loggedInRoutes());
+    renderApp("/painel");
+
+    await screen.findByRole("article", { name: /Maria Passado/ });
+    expect(screen.queryByRole("heading", { name: "Primeiros passos" })).not.toBeInTheDocument();
   });
 });
 
