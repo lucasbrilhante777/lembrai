@@ -17,5 +17,9 @@ export async function createLoggedOwner(app: Express, establishmentName = "Barbe
   });
   if (res.status !== 201) throw new Error(`Falha ao criar dono de teste: ${JSON.stringify(res.body)}`);
 
-  return { agent, establishmentId: res.body.establishment.id as string };
+  return {
+    agent,
+    establishmentId: res.body.establishment.id as string,
+    slug: res.body.establishment.slug as string,
+  };
 }

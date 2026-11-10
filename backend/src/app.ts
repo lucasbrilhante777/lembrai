@@ -5,9 +5,11 @@ import helmet from "helmet";
 import { env } from "./config/env.js";
 import { ensureAuthenticated } from "./middlewares/ensure-authenticated.js";
 import { errorHandler, notFoundHandler } from "./middlewares/error-handler.js";
+import { publicRateLimit } from "./middlewares/rate-limit.js";
 import { authRoutes } from "./routes/auth.routes.js";
 import { healthRoutes } from "./routes/health.routes.js";
 import { professionalsRoutes } from "./routes/professionals.routes.js";
+import { publicRoutes } from "./routes/public.routes.js";
 import { servicesRoutes } from "./routes/services.routes.js";
 
 // Monta a aplicação sem chamar listen(). Assim os testes usam o app
@@ -22,6 +24,7 @@ export function createApp() {
 
   app.use("/health", healthRoutes);
   app.use("/auth", authRoutes);
+  app.use("/public", publicRateLimit, publicRoutes);
 
   // Rotas do painel: o login é exigido aqui, uma vez, para o grupo inteiro.
   app.use("/services", ensureAuthenticated, servicesRoutes);
