@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/lucasbrilhante777/lembrai/actions/workflows/ci.yml/badge.svg)](https://github.com/lucasbrilhante777/lembrai/actions/workflows/ci.yml)
 
-> 🚧 **Em desenvolvimento.** A API do MVP está completa e testada: autenticação, serviços, profissionais e horários, cálculo de horários livres com fuso horário, agendamento público com garantia anti-conflito, e-mails de confirmação e lembrete, cancelamento pelo link e agenda do dono. Já tem conta demo com dados realistas. Próximos passos: front-end e deploy. Acompanhe pela [lista de funcionalidades](#funcionalidades).
+> 🚧 **Em desenvolvimento.** A API do MVP está completa e testada: autenticação, serviços, profissionais e horários, cálculo de horários livres com fuso horário, agendamento público com garantia anti-conflito, e-mails de confirmação e lembrete, cancelamento pelo link e agenda do dono. Já tem conta demo com dados realistas. No front-end, a página pública de agendamento, o login, a agenda do dono e a página de cancelamento estão prontos. Próximos passos: telas de serviços, profissionais e horários, e o deploy. Acompanhe pela [lista de funcionalidades](#funcionalidades).
 
 **Agendamento online + lembretes automáticos para pequenos negócios de serviço** (barbearias, salões, clínicas, personal trainers).
 
@@ -68,9 +68,9 @@ O **profissional** (ex.: o barbeiro funcionário) existe no sistema para ter age
 - [x] Cálculo de horários livres (respeitando duração do serviço, expediente e agendamentos existentes)
 - [x] Página pública `/agenda/:slug`, sem o cliente criar conta
 - [x] **Garantia de que dois clientes nunca pegam o mesmo horário**, mesmo agendando ao mesmo tempo ([ADR 0001](docs/adr/0001-prevencao-de-conflito-de-agenda.md))
-- [x] Calendário do dono (visão diária e semanal) com mudança de status: concluído, falta, cancelado (API pronta; falta a tela)
+- [x] Calendário do dono (visão diária e semanal) com mudança de status: concluído, falta, cancelado
 - [x] E-mail de confirmação ao agendar e lembrete por e-mail 24h antes (envio único, mesmo com várias instâncias)
-- [x] Cancelamento pelo cliente através do link no e-mail (API pronta; falta a página no front-end)
+- [x] Cancelamento pelo cliente através do link no e-mail
 
 ### v1.1+
 Bloqueios e folgas, histórico do cliente, relatório de faturamento, recuperação de senha, planos Free/Pro. Detalhes no [roadmap](#roadmap).

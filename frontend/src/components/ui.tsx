@@ -40,10 +40,19 @@ export function OptionButton({
   );
 }
 
-export function PrimaryButton({ className = "", ...props }: ButtonHTMLAttributes<HTMLButtonElement>) {
+/** `danger` para ações destrutivas (ex.: cancelar). A cor vem da variante, não de classes sobrepostas. */
+export function PrimaryButton({
+  className = "",
+  variant = "primary",
+  ...props
+}: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "danger" }) {
+  const colors =
+    variant === "danger"
+      ? "bg-red-600 hover:bg-red-700 focus-visible:outline-red-600"
+      : "bg-teal-600 hover:bg-teal-700 focus-visible:outline-teal-600";
   return (
     <button
-      className={`w-full rounded-xl bg-teal-600 px-4 py-3 font-semibold text-white transition hover:bg-teal-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600 disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
+      className={`w-full rounded-xl px-4 py-3 font-semibold text-white transition focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-60 ${colors} ${className}`}
       {...props}
     />
   );

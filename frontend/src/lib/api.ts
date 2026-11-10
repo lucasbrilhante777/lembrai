@@ -30,9 +30,12 @@ export async function api<T>(path: string, init: { method?: string; body?: unkno
 
   if (response.status === 204) return undefined as T;
 
-  const data = await response.json().catch(() => null);
+  const data = await response.json().catch(() => undefined);
   if (!response.ok) {
     throw new ApiError(data?.message ?? "Algo deu errado. Tente novamente.", response.status, data?.issues ?? []);
   }
+  // 200 sem JSON = não foi a nossa API que respondeu (ex.: proxy fora do ar devolvendo o HTML do site).
+  // Melhor falhar alto do que seguir com `undefined` fingindo que deu certo.
+  if (data === undefined) throw new ApiError("Resposta inesperada do servidor. Tente novamente.", response.status);
   return data as T;
 }
