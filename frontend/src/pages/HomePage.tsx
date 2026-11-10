@@ -18,7 +18,16 @@ export function HomePage() {
         >
           Ver a página de agendamento (demo)
         </Link>
+        <Link
+          to="/entrar"
+          className="rounded-xl border border-slate-300 bg-white px-5 py-3 font-semibold text-slate-700 hover:border-teal-500 hover:text-teal-700"
+        >
+          Entrar no painel
+        </Link>
       </div>
+      <p className="mt-4 text-sm text-slate-500">
+        Conta demo: <strong>demo@example.com</strong> / <strong>lembrai-demo</strong>
+      </p>
     </main>
   );
 }

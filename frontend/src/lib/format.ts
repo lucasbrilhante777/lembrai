@@ -44,6 +44,20 @@ export function formatLongDate(date: string) {
   }).format(calendarDate(date));
 }
 
+/** Segunda-feira da semana da data (a semana da agenda vai de segunda a domingo). */
+export function startOfWeek(date: string) {
+  const dayOfWeek = calendarDate(date).getUTCDay(); // 0 = domingo
+  return addDays(date, -((dayOfWeek + 6) % 7));
+}
+
+/** "9 – 15 de novembro" (ou "30 de novembro – 6 de dezembro" quando atravessa o mês) */
+export function formatWeekRange(from: string, to: string) {
+  return new Intl.DateTimeFormat("pt-BR", { day: "numeric", month: "long", timeZone: "UTC" }).formatRange(
+    calendarDate(from),
+    calendarDate(to),
+  );
+}
+
 function calendarDate(date: string) {
   return new Date(`${date}T12:00:00Z`);
 }

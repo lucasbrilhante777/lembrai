@@ -1,4 +1,5 @@
 import type { FormEvent } from "react";
+import { TextField } from "../../components/form.tsx";
 import { PrimaryButton } from "../../components/ui.tsx";
 import type { FieldIssue } from "../../lib/api.ts";
 import type { CustomerInput } from "./api.ts";
@@ -34,7 +35,7 @@ export function CustomerForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-      <Field
+      <TextField
         label="Seu nome"
         name="name"
         autoComplete="name"
@@ -42,7 +43,7 @@ export function CustomerForm({
         error={errorFor("customer.name")}
         onChange={(name) => onCustomerChange({ ...customer, name })}
       />
-      <Field
+      <TextField
         label="E-mail"
         name="email"
         type="email"
@@ -52,7 +53,7 @@ export function CustomerForm({
         error={errorFor("customer.email")}
         onChange={(email) => onCustomerChange({ ...customer, email })}
       />
-      <Field
+      <TextField
         label="Telefone (com DDD)"
         name="phone"
         type="tel"
@@ -82,54 +83,5 @@ export function CustomerForm({
         {submitting ? "Confirmando..." : "Confirmar agendamento"}
       </PrimaryButton>
     </form>
-  );
-}
-
-type FieldProps = {
-  label: string;
-  name: string;
-  value: string;
-  onChange: (value: string) => void;
-  error?: string;
-  hint?: string;
-  type?: string;
-  autoComplete?: string;
-  placeholder?: string;
-};
-
-function Field({ label, name, value, onChange, error, hint, type = "text", autoComplete, placeholder }: FieldProps) {
-  const id = `field-${name}`;
-  const describedBy = error ? `${id}-error` : hint ? `${id}-hint` : undefined;
-  return (
-    <div>
-      <label htmlFor={id} className="mb-1 block text-sm font-medium text-slate-700">
-        {label}
-      </label>
-      <input
-        id={id}
-        name={name}
-        type={type}
-        value={value}
-        autoComplete={autoComplete}
-        placeholder={placeholder}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={describedBy}
-        onChange={(e) => onChange(e.target.value)}
-        className={`w-full rounded-xl border bg-white px-3 py-2.5 outline-none focus:ring-2 focus:ring-teal-600 ${
-          error ? "border-red-400" : "border-slate-300"
-        }`}
-      />
-      {error ? (
-        <p id={`${id}-error`} className="mt-1 text-sm text-red-700">
-          {error}
-        </p>
-      ) : (
-        hint && (
-          <p id={`${id}-hint`} className="mt-1 text-xs text-slate-500">
-            {hint}
-          </p>
-        )
-      )}
-    </div>
   );
 }
