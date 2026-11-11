@@ -1,0 +1,31 @@
+# Infraestrutura como código: o Render lê este arquivo ("Blueprint") e cria a API com esta configuração.
+# Ver docs/adr/0003-deploy-com-proxy-na-vercel.md
+services:
+  - type: web
+    name: lembrai-api
+    runtime: node
+    plan: free
+    region: virginia # perto do banco no Neon (AWS us-east-1)
+    rootDir: backend
+    # --include=dev: o build precisa do TypeScript, do Prisma CLI e do tsx (devDependencies).
+    # Depois do build: aplica as migrations e recria a conta demo (o seed só mexe na demo).
+    buildCommand: npm ci --include=dev && npm run build && npx prisma migrate deploy && npm run db:seed
+    startCommand: npm start
+    healthCheckPath: /health
+    # Só publica depois que o CI do commit passar na main.
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL
+        sync: false # segredo: preenchido no painel do Render (string de conexão do Neon)
+      - key: JWT_SECRET
+        generateValue: true # o Render gera um valor aleatório
+      - key: FRONTEND_URL
+        sync: false # endereço do site na Vercel (usado nos links dos e-mails)
+      - key: TRUST_PROXY
+        value: "2" # Vercel + Render
+      - key: JOBS_ENABLED
+        value: "true"

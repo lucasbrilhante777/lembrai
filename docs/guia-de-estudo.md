@@ -26,9 +26,10 @@ Cada seção termina com um bloco **🎤 Em entrevista**, uma resposta curta que
 14. [Testes](#14-testes)
 15. [Front-end](#15-front-end)
 16. [Conta demo (seed)](#16-conta-demo-seed)
-17. [Como revisar código feito por IA](#17-como-revisar-código-feito-por-ia)
-18. [Perguntas para revisar](#18-perguntas-para-revisar)
-19. [Glossário](#19-glossário)
+17. [Deploy e produção](#17-deploy-e-produção)
+18. [Como revisar código feito por IA](#18-como-revisar-código-feito-por-ia)
+19. [Perguntas para revisar](#19-perguntas-para-revisar)
+20. [Glossário](#20-glossário)
 
 ---
 
@@ -334,8 +335,10 @@ Um agendamento passa por **estados**, e só algumas transições são permitidas
 - **Teste de mutação**: quebrar o código de propósito para confirmar que o teste falha. Se ele continuar passando, não testa nada.
 - **Determinismo**: o seed usa um gerador aleatório com **semente fixa**, então gera sempre os mesmos dados e o teste não é "às vezes passa, às vezes falha" (*flaky*).
 - **Testes de front pela tela**: clicar em "Corte", digitar em "Seu nome", conferir o que aparece. Não testam detalhes internos, então continuam valendo se o componente for reescrito.
+- **API simulada "com memória"** ([mock-api.tsx](../frontend/src/test/mock-api.tsx)): nos testes do painel, o `POST` muda a lista que o `GET` devolve depois, como a API real. Assim o teste vê o serviço novo aparecer na tela.
+- **Cuidado com o "falso verde"**: a agenda passou a buscar `/services`, e os testes antigos não simulavam essa rota. O erro ficava "engolido" pelo React Query e **os testes passavam sem testar nada**. Correção: o simulador agora **reprova o teste** quando a tela chama uma rota não prevista. Para provar que a proteção funciona, a correção foi desfeita por um momento, e 8 testes falharam com a mensagem certa.
 
-🎤 **Em entrevista:** "Tenho testes unitários para a lógica pura, de integração contra um Postgres real para a API e de componente no front, simulando o usuário. Para as partes de concorrência, forcei os cenários com mocks e confirmei com teste de mutação que os testes realmente pegam o erro."
+🎤 **Em entrevista:** "Tenho testes unitários para a lógica pura, de integração contra um Postgres real para a API e de componente no front, simulando o usuário. Para as partes de concorrência, forcei os cenários com mocks e confirmei com teste de mutação que os testes realmente pegam o erro. Também deixei os testes falharem alto quando a tela chama algo não previsto, porque um teste que passa sem testar é pior que nenhum."
 
 ---
 
@@ -348,7 +351,16 @@ Um agendamento passa por **estados**, e só algumas transições são permitidas
 - **Estado "levantado" (lifting state up)**: os dados do cliente ficam na página, não no formulário. Assim, se o horário for ocupado e o formulário sumir, o que foi digitado não se perde.
 - **Acessibilidade**: `aria-pressed` nos botões de escolha, `label` em cada campo, erros ligados ao campo (`aria-describedby`, `aria-invalid`) e foco visível. Leitores de tela conseguem usar a página, e os testes acham os elementos pelos mesmos nomes.
 
-🎤 **Em entrevista:** "No front, uso React Query para o estado do servidor e um proxy para manter front e API na mesma origem, o que simplifica o cookie de login. Tratei o 409 sem perder o que o usuário digitou, e a página é acessível, com labels e atributos ARIA."
+### Painel do dono: o que vale saber
+- **Rota protegida** ([RequireAuth.tsx](../frontend/src/features/auth/RequireAuth.tsx)): sem sessão, manda para `/entrar` e lembra a página que a pessoa queria. É só conforto de tela: **quem protege os dados é a API** (401 sem o cookie). Pergunta comum: "esconder o botão no front é segurança?" Não, nunca.
+- **O perigo do `!` no TypeScript**: `session.data!` diz "confia, nunca é nulo". Na hora do "Sair", ele **era** nulo por um instante, e a tela quebrava. A correção foi a rota protegida **entregar** a sessão às telas de dentro (contexto da rota), que só existem com sessão válida. Todo `!` merece um "tem certeza?" na revisão.
+- **401 global**: se qualquer chamada do painel receber 401 (sessão expirou), o cache marca "deslogado", e o usuário volta para o login ([query-client.ts](../frontend/src/lib/query-client.ts)).
+- **Falhar alto** ([api.ts](../frontend/src/lib/api.ts)): uma resposta 200 que não é JSON (ex.: o proxy fora do ar devolvendo o HTML do site) vira erro. Antes, ela virava "ninguém logado" em silêncio e escondia o problema.
+- **Função impura na renderização**: `new Date()` direto no componente dá um valor diferente a cada render. O `useNow()` ([use-now.ts](../frontend/src/lib/use-now.ts)) guarda o "agora" em estado e atualiza a cada minuto. Bônus: os botões da agenda mudam sozinhos quando chega a hora do atendimento.
+- **Dinheiro digitado**: o dono digita "35,00", e a API guarda `3500` ([money.ts](../frontend/src/lib/money.ts)). `19,99 × 100` em ponto flutuante dá `1998,9999…`, por isso o `Math.round`. É uma pergunta clássica: "por que não usar float para dinheiro?"
+- **Validar no front é conforto, no back é segurança**: o editor de horários avisa antes de enviar, e a API valida as mesmas regras de novo.
+
+🎤 **Em entrevista:** "No front, uso React Query para o estado do servidor e um proxy para manter front e API na mesma origem, o que simplifica o cookie de login. A rota protegida é só experiência de uso; a segurança está na API. Evito asserções de não-nulo e prefiro que erros inesperados falhem alto em vez de virarem um estado vazio silencioso."
 
 ---
 
@@ -361,7 +373,32 @@ Um agendamento passa por **estados**, e só algumas transições são permitidas
 
 ---
 
-## 17. Como revisar código feito por IA
+## 17. Deploy e produção
+
+Ver [ADR 0003](adr/0003-deploy-com-proxy-na-vercel.md).
+
+```
+Navegador ──► Vercel (site React)  ──/api/*──►  Render (API Node)  ──►  Neon (Postgres)
+              lembrai.vercel.app     rewrite      lembrai-api.onrender.com
+```
+
+| Conceito | No Lembrai |
+|---|---|
+| **Variáveis de ambiente** | Configuração e segredos (`DATABASE_URL`, `JWT_SECRET`) ficam no painel do serviço, **nunca no código**. Em dev, ficam no `.env`, que está no `.gitignore` |
+| **Proxy reverso / rewrite** | A Vercel repassa `/api/*` para o Render. Para o navegador é um site só, então o cookie de login funciona sem CORS (mesmo papel do proxy do Vite em dev) |
+| **`trust proxy`** | Com 2 proxies na frente (Vercel e Render), o Express precisa saber disso para ler o IP real no `X-Forwarded-For`. Sem isso, o rate limit veria todo mundo como um IP só e bloquearia todos juntos |
+| **Infraestrutura como código** | A API é descrita no [render.yaml](../render.yaml): build, migrations, seed e variáveis ficam no Git, reproduzíveis |
+| **Migrations no deploy** | `prisma migrate deploy` aplica as migrations pendentes antes da nova versão entrar no ar |
+| **Deploy só com CI verde** | `autoDeployTrigger: checksPass`: um commit que quebra os testes não vai para produção |
+| **Cold start** | O plano gratuito do Render "dorme" sem uso. A 1ª requisição demora, e o job de lembretes para. Mitigação: um monitor externo chama `/health` a cada 10 min |
+| **Degradar com elegância** | Sem SMTP configurado, o e-mail fica desligado (com aviso no log), e o resto do sistema funciona |
+| **Health check** | `GET /health`: o Render usa para saber se a API subiu antes de trocar a versão |
+
+🎤 **Em entrevista:** "O front está na Vercel e a API no Render, com Postgres no Neon. A Vercel faz rewrite de `/api` para a API, então tudo fica na mesma origem e o cookie httpOnly com SameSite=Lax funciona sem CORS. Configurei `trust proxy` para o rate limit enxergar o IP real. O deploy é descrito em código, aplica as migrations e só acontece com o CI verde. No plano gratuito a API hiberna, então uso um monitor externo e o job de lembretes é idempotente: um atraso adia o lembrete, mas nunca duplica."
+
+---
+
+## 18. Como revisar código feito por IA
 
 Use isto em todo PR:
 
@@ -375,6 +412,9 @@ Use isto em todo PR:
 8. **Algum dado sensível volta na resposta?** (senha, token, dados de outro cliente)
 9. **Testei a parte visível na mão?**
 10. **Tem um jeito mais simples?**
+11. **Tem `!` (não-nulo) ou `as` forçando tipo?** Pergunte por que nunca seria nulo (seção 15).
+12. **Algum erro pode estar sendo "engolido"?** Um `catch` vazio ou um "devolve null se falhar" esconde problemas (seções 14 e 15).
+13. **Tem segredo no código?** Senha, token ou URL de banco têm que vir de variável de ambiente (seção 17).
 
 Frases úteis para pedir à IA:
 - "Explica essa parte como se eu fosse júnior."
@@ -384,7 +424,7 @@ Frases úteis para pedir à IA:
 
 ---
 
-## 18. Perguntas para revisar
+## 19. Perguntas para revisar
 
 Tente responder sozinho antes de olhar a seção indicada.
 
@@ -413,10 +453,18 @@ Tente responder sozinho antes de olhar a seção indicada.
 23. O que é teste de mutação? *(14)*
 24. Por que os testes usam um banco separado? *(14)*
 25. Para que serve o proxy `/api` do front? *(15)*
+26. Esconder um botão no front protege os dados? Onde fica a proteção de verdade? *(15)*
+27. Qual o risco de usar `!` no TypeScript? Dê o exemplo do projeto. *(15)*
+28. Por que não usar float para dinheiro? *(8, 15)*
+29. O que é um "falso verde" em testes e como o projeto evita? *(14)*
+30. Por que a Vercel repassa `/api` para o Render em vez de o front chamar o Render direto? *(17)*
+31. O que é `trust proxy` e o que quebraria sem ele? *(17)*
+32. O que acontece com o job de lembretes quando a API "dorme" no plano gratuito? *(11, 17)*
+33. Onde ficam os segredos (senha do banco, segredo do JWT) em produção? *(17)*
 
 ---
 
-## 19. Glossário
+## 20. Glossário
 
 | Termo | Significado |
 |---|---|
@@ -424,12 +472,18 @@ Tente responder sozinho antes de olhar a seção indicada.
 | **API REST** | API em que URLs são recursos e verbos HTTP são ações |
 | **bcrypt** | Algoritmo de hash de senha, propositalmente lento |
 | **Branch** | Linha paralela de trabalho no Git |
+| **CDN** | Rede de servidores espalhados pelo mundo que entrega os arquivos do site mais perto de quem acessa (Vercel) |
 | **CI/CD** | Integração contínua / entrega contínua |
+| **Cold start** | Demora da primeira requisição depois que o servidor "dormiu" |
 | **Constraint** | Regra garantida pelo banco (UNIQUE, CHECK, EXCLUDE) |
 | **CORS** | Regra do navegador sobre chamadas entre sites diferentes |
 | **CSRF** | Ataque em que outro site usa o seu cookie para fazer requisições |
 | **DST** | Horário de verão |
+| **Falso verde** | Teste que passa sem testar de verdade |
 | **Flaky** | Teste que às vezes passa e às vezes falha sem mudança no código |
+| **Função impura** | Função cujo resultado depende de algo de fora (relógio, rede) ou que altera algo de fora |
+| **Health check** | Rota simples (`/health`) que diz se o serviço está de pé |
+| **IaC** | Infraestrutura como código: a configuração do servidor fica num arquivo versionado (`render.yaml`) |
 | **Hash** | "Resumo" irreversível de um dado |
 | **Idempotente** | Rodar várias vezes dá o mesmo resultado que rodar uma |
 | **IDOR** | Acessar dados de outro cliente trocando um id |
@@ -439,8 +493,10 @@ Tente responder sozinho antes de olhar a seção indicada.
 | **Migration** | Arquivo versionado que altera a estrutura do banco |
 | **Mock / Spy** | Peça falsa ou "espiã" usada em testes |
 | **Multi-tenant** | Vários clientes no mesmo sistema, com dados isolados |
+| **Non-null assertion (`!`)** | Dizer ao TypeScript "isto nunca é nulo". Desliga a checagem, então use com desconfiança |
 | **ORM** | Biblioteca que mapeia tabelas para código (Prisma) |
 | **PR** | Pull Request: pedido para juntar uma branch na main |
+| **Proxy reverso / rewrite** | Servidor que recebe a requisição e repassa para outro (Vercel → Render) |
 | **Race condition** | Erro causado por duas operações simultâneas |
 | **Rate limit** | Limite de requisições por tempo |
 | **Seed** | Script que popula o banco com dados de exemplo |
@@ -450,4 +506,6 @@ Tente responder sozinho antes de olhar a seção indicada.
 | **SQLSTATE** | Código de erro padronizado do banco (ex.: `23P01`) |
 | **Timing attack** | Descobrir informação medindo o tempo de resposta |
 | **UTC / IANA** | Horário universal / nome padrão de fuso (`America/Recife`) |
+| **Variável de ambiente** | Configuração passada para o programa de fora do código (`DATABASE_URL`), diferente em cada ambiente |
+| **X-Forwarded-For** | Cabeçalho em que os proxies anotam o IP de quem fez a requisição |
 | **XSS** | Script malicioso rodando na página ou no e-mail |
