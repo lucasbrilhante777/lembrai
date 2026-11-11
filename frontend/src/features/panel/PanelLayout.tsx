@@ -39,6 +39,8 @@ export function PanelLayout() {
           <PanelLink to="/painel" end>
             Agenda
           </PanelLink>
+          <PanelLink to="/painel/servicos">Serviços</PanelLink>
+          <PanelLink to="/painel/profissionais">Profissionais</PanelLink>
         </nav>
       </header>
 

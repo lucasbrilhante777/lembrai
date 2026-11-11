@@ -22,21 +22,12 @@ export type Appointment = {
 
 export type AgendaResponse = { from: string; to: string; timezone: string; appointments: Appointment[] };
 
-export type ProfessionalOption = { id: string; name: string; active: boolean };
-
 export function useAppointments(params: { from: string; to: string; professionalId: string | null }) {
   const query = new URLSearchParams({ from: params.from, to: params.to });
   if (params.professionalId) query.set("professionalId", params.professionalId);
   return useQuery({
     queryKey: ["appointments", params],
     queryFn: () => api<AgendaResponse>(`/appointments?${query}`),
-  });
-}
-
-export function useProfessionalOptions() {
-  return useQuery({
-    queryKey: ["professionals"],
-    queryFn: () => api<ProfessionalOption[]>("/professionals"),
   });
 }
 
