@@ -2,15 +2,15 @@
 
 [![CI](https://github.com/lucasbrilhante777/lembrai/actions/workflows/ci.yml/badge.svg)](https://github.com/lucasbrilhante777/lembrai/actions/workflows/ci.yml)
 
-> 🚧 **Em desenvolvimento.** A API do MVP está completa e testada: autenticação, serviços, profissionais e horários, cálculo de horários livres com fuso horário, agendamento público com garantia anti-conflito, e-mails de confirmação e lembrete, cancelamento pelo link e agenda do dono. Já tem conta demo com dados realistas. No front-end, a página pública de agendamento, o login, a agenda do dono e a página de cancelamento estão prontos. Próximos passos: telas de serviços, profissionais e horários, e o deploy. Acompanhe pela [lista de funcionalidades](#funcionalidades).
+> ✅ **MVP no ar.** Página pública de agendamento, painel do dono (agenda, serviços, profissionais e horários), garantia anti-conflito de horários, e-mails de confirmação e lembrete e cancelamento pelo link, com testes e CI. Próximos passos no [roadmap](#roadmap).
 
 **Agendamento online + lembretes automáticos para pequenos negócios de serviço** (barbearias, salões, clínicas, personal trainers).
 
 O cliente agenda sozinho por um link público, sem criar conta. O dono vê a agenda num calendário e não precisa mais lembrar ninguém pelo WhatsApp: o sistema manda o lembrete.
 
-> 🔗 **Demo:** TODO (link do deploy)
-> 👤 **Conta demo:** `demo@example.com` / `lembrai-demo`
-> 📅 **Página pública de exemplo:** TODO (`/agenda/barbearia-demo`)
+> 🔗 **Demo:** https://lembraiapp.vercel.app (a primeira abertura pode levar até 1 minuto: a API está num plano gratuito que hiberna)
+> 👤 **Conta demo:** `demo@example.com` / `lembrai-demo`, em https://lembraiapp.vercel.app/entrar
+> 📅 **Página pública de exemplo:** https://lembraiapp.vercel.app/agenda/barbearia-demo
 > 📚 **[Guia de estudo](docs/guia-de-estudo.md):** os conceitos por trás do projeto (concorrência, fuso horário, segurança, testes, CI) e como cada um aparece no código
 
 ![Fluxo de agendamento](docs/img/demo.gif) <!-- TODO: gravar o GIF do fluxo principal -->
