@@ -387,6 +387,7 @@ Navegador ──► Vercel (site React)  ──/api/*──►  Render (API Node
 | **Variáveis de ambiente** | Configuração e segredos (`DATABASE_URL`, `JWT_SECRET`) ficam no painel do serviço, **nunca no código**. Em dev, ficam no `.env`, que está no `.gitignore` |
 | **Proxy reverso / rewrite** | A Vercel repassa `/api/*` para o Render. Para o navegador é um site só, então o cookie de login funciona sem CORS (mesmo papel do proxy do Vite em dev) |
 | **`trust proxy`** | Com 2 proxies na frente (Vercel e Render), o Express precisa saber disso para ler o IP real no `X-Forwarded-For`. Sem isso, o rate limit veria todo mundo como um IP só e bloquearia todos juntos |
+| **SPA fallback** | O React é uma *Single Page Application*: só existe um `index.html`, e quem decide a tela é o React Router. Se alguém abrir `/painel` direto (ou der F5), a Vercel procuraria um arquivo `painel` e daria 404. A 2ª regra do [vercel.json](../frontend/vercel.json) manda qualquer caminho para o `index.html` |
 | **Infraestrutura como código** | A API é descrita no [render.yaml](../render.yaml): build, migrations, seed e variáveis ficam no Git, reproduzíveis |
 | **Migrations no deploy** | `prisma migrate deploy` aplica as migrations pendentes antes da nova versão entrar no ar |
 | **Deploy só com CI verde** | `autoDeployTrigger: checksPass`: um commit que quebra os testes não vai para produção |
@@ -461,6 +462,7 @@ Tente responder sozinho antes de olhar a seção indicada.
 31. O que é `trust proxy` e o que quebraria sem ele? *(17)*
 32. O que acontece com o job de lembretes quando a API "dorme" no plano gratuito? *(11, 17)*
 33. Onde ficam os segredos (senha do banco, segredo do JWT) em produção? *(17)*
+34. Por que dar F5 em `/painel` daria 404 sem configuração, e como o projeto resolve? *(17)*
 
 ---
 
