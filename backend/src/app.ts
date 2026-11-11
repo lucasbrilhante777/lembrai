@@ -18,6 +18,10 @@ import { servicesRoutes } from "./routes/services.routes.js";
 export function createApp() {
   const app = express();
 
+  // Confia nos N proxies à frente da API (Vercel + Render em produção) para descobrir o IP real
+  // do cliente no X-Forwarded-For. Usado pelo rate limit. Em dev e nos testes é 0 (sem proxy).
+  app.set("trust proxy", env.TRUST_PROXY);
+
   app.use(helmet());
   app.use(cors({ origin: env.FRONTEND_URL, credentials: true }));
   app.use(express.json());

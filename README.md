@@ -175,6 +175,7 @@ User 1──N Establishment 1──N Professional N──N Service
 |---|---|---|
 | [0001](docs/adr/0001-prevencao-de-conflito-de-agenda.md) | Prevenção de conflito de agenda no banco | Exclusion constraint do Postgres em vez de checar no código |
 | [0002](docs/adr/0002-datas-em-utc-e-timezone-do-estabelecimento.md) | Datas em UTC + timezone do estabelecimento | Evita horários errados em horário de verão e servidores em outro fuso |
+| [0003](docs/adr/0003-deploy-com-proxy-na-vercel.md) | Deploy com a Vercel repassando `/api` para o Render | Front e API na mesma origem: cookie de login seguro sem CORS entre domínios |
 
 Decisões menores, sem ADR próprio:
 - **node-cron em vez de fila (BullMQ/pg-boss):** no volume do MVP, um job a cada 15 min basta. O `reminderSentAt` garante que reinícios ou execuções duplicadas não reenviem e-mails. Se houver várias instâncias da API, a migração natural é para o `pg-boss`.
