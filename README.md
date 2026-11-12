@@ -74,9 +74,10 @@ O **profissional** (ex.: o barbeiro funcionário) existe no sistema para ter age
 
 ### v1.1
 - [x] Bloqueios de agenda: folgas, férias e feriados, de um profissional ou do estabelecimento inteiro, por dias ou por horas. Os horários bloqueados somem da página pública, e o painel avisa sobre agendamentos que já existiam no período
+- [x] Relatório de faturamento: receita, atendimentos, ticket médio e taxa de faltas por período, com comparação ao período anterior, receita por dia (gráfico + tabela) e rankings por serviço e por profissional
 
 ### Próximos
-Histórico do cliente, relatório de faturamento, recuperação de senha, planos Free/Pro. Detalhes no [roadmap](#roadmap).
+Histórico do cliente, recuperação de senha, planos Free/Pro. Detalhes no [roadmap](#roadmap).
 
 ## Stack
 
@@ -250,7 +251,7 @@ Projeto desenvolvido sozinho, em sprints semanais.
 **Produto**
 - [x] Bloqueios de agenda (folgas, feriados, férias)
 - [ ] Histórico do cliente (agendamentos anteriores, faltas)
-- [ ] Relatório de faturamento por período (soma dos agendamentos `COMPLETED` pelo preço salvo no agendamento)
+- [x] Relatório de faturamento por período (soma dos agendamentos `COMPLETED` pelo preço salvo no agendamento)
 - [ ] Recuperação de senha e verificação de e-mail
 - [ ] Planos Free (1 profissional, 100 agendamentos/mês) e Pro (ilimitado)
 - [ ] Lembrete por WhatsApp

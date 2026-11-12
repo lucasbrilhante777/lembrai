@@ -24,13 +24,14 @@ Cada seção termina com um bloco **🎤 Em entrevista**, uma resposta curta que
 12. [E-mails](#12-e-mails)
 13. [Máquina de estados](#13-máquina-de-estados)
 14. [Bloqueios de agenda](#14-bloqueios-de-agenda)
-15. [Testes](#15-testes)
-16. [Front-end](#16-front-end)
-17. [Conta demo (seed)](#17-conta-demo-seed)
-18. [Deploy e produção](#18-deploy-e-produção)
-19. [Como revisar código feito por IA](#19-como-revisar-código-feito-por-ia)
-20. [Perguntas para revisar](#20-perguntas-para-revisar)
-21. [Glossário](#21-glossário)
+15. [Relatórios e agregação em SQL](#15-relatórios-e-agregação-em-sql)
+16. [Testes](#16-testes)
+17. [Front-end](#17-front-end)
+18. [Conta demo (seed)](#18-conta-demo-seed)
+19. [Deploy e produção](#19-deploy-e-produção)
+20. [Como revisar código feito por IA](#20-como-revisar-código-feito-por-ia)
+21. [Perguntas para revisar](#21-perguntas-para-revisar)
+22. [Glossário](#22-glossário)
 
 ---
 
@@ -251,7 +252,7 @@ Cliente B: grava 09:00                   ← dois clientes no mesmo horário!
 | **Controle otimista** | Mudança de status pelo dono ([appointments.service.ts](../backend/src/services/appointments.service.ts)) | `UPDATE ... WHERE status = <o que eu li>`. Se outra pessoa mudou no meio, 0 linhas são alteradas, e o dono recebe "acabou de ser alterado" em vez de sobrescrever em silêncio |
 | **Reserva atômica** | Job de lembretes ([reminders.job.ts](../backend/src/jobs/reminders.job.ts)) | `UPDATE ... WHERE reminderSentAt IS NULL`. Só uma execução consegue "reservar" o envio |
 
-**Como foi provado:** testes com `Promise.all` (dois pedidos ao mesmo tempo) e um teste que **força** o caminho da constraint, fazendo a checagem da API "não enxergar" o conflito. Para garantir que esse teste vale, a conversão do erro foi desligada de propósito, e o teste falhou com 500. Isso é um **teste de mutação** (seção 15).
+**Como foi provado:** testes com `Promise.all` (dois pedidos ao mesmo tempo) e um teste que **força** o caminho da constraint, fazendo a checagem da API "não enxergar" o conflito. Para garantir que esse teste vale, a conversão do erro foi desligada de propósito, e o teste falhou com 500. Isso é um **teste de mutação** (seção 16).
 
 🎤 **Em entrevista:** "O risco era dois clientes pegarem o mesmo horário ao mesmo tempo. A checagem na aplicação não resolve isso sozinha, por causa da race condition. Coloquei uma exclusion constraint no Postgres, com ranges de tempo por profissional, e a API traduz a violação em 409. Tenho teste com requisições simultâneas e um teste que força o caminho da constraint."
 
@@ -339,7 +340,28 @@ Folgas, férias, feriados e compromissos ([time-offs.service.ts](../backend/src/
 
 ---
 
-## 15. Testes
+## 15. Relatórios e agregação em SQL
+
+Tela **Relatórios** do painel ([reports.service.ts](../backend/src/services/reports.service.ts)): receita, atendimentos, ticket médio, taxa de faltas, comparação com o período anterior, receita por dia, por serviço e por profissional.
+
+| Ponto | O que vale saber |
+|---|---|
+| **Regra de negócio** | Receita = soma dos agendamentos **concluídos**, pelo preço salvo em cada um (snapshot, seção 8). Mudar o preço do serviço não altera o passado |
+| **Agregar no banco** | `GROUP BY` com `SUM`/`COUNT` no Postgres. O banco devolve só os totais, em vez de a API baixar milhares de linhas e somar em JavaScript. Pergunta clássica: "onde você faria essa conta?" |
+| **`groupBy` do Prisma** | Agrupa por `status`, `serviceId` e `professionalId` e devolve só os ids; os nomes vêm numa 2ª consulta (`id IN (...)`), sem uma consulta por linha (o famoso problema **N+1**) |
+| **SQL puro quando o ORM não alcança** | Agrupar por **dia local** precisa de `AT TIME ZONE` no SQL (seção 10). O Prisma não faz isso, então foi usado `$queryRaw` |
+| **SQL injection** | O `$queryRaw` com template (`${valor}`) envia cada valor como **parâmetro**, nunca colado no texto do SQL. Concatenar strings para montar SQL é a falha clássica que permite injection |
+| **Consultas em paralelo** | As 5 consultas independentes rodam juntas com `Promise.all`, em vez de uma esperando a outra |
+| **Contas que não quebram** | Sem atendimentos: ticket médio 0 e taxa de faltas `null` (exibida como "–"), em vez de dividir por zero. Sem dados no período anterior: "sem base para comparar", em vez de uma porcentagem inventada |
+| **Dias sem movimento** | O SQL só devolve dias que tiveram receita; a API completa os outros com zero, para o gráfico não "pular" dias |
+| **Gráfico (boas práticas)** | Uma série só, então sem legenda (o título já diz o que é). Barras finas com base reta, eixo com números redondos (0, 500, 1 mil...), grade discreta, poucos rótulos no eixo X, dica ao passar o mouse **e ao focar pelo teclado**, e uma **visão em tabela** com os mesmos números. A variação nos cartões usa seta e sinal, não só cor (daltonismo) |
+| **Olhar o resultado** | Testes não pegam layout. Abrindo a tela, apareceram dois problemas (rótulo do eixo encostando no título e rótulo vazando a borda) que foram corrigidos |
+
+🎤 **Em entrevista:** "O relatório agrega no banco com GROUP BY, não em memória. Para agrupar por dia no fuso do estabelecimento, usei SQL puro com AT TIME ZONE, passando os valores como parâmetros para evitar SQL injection. As consultas independentes rodam em paralelo, e tratei os casos de divisão por zero. No gráfico, segui boas práticas de acessibilidade: dica também pelo teclado, visão em tabela e variação que não depende só de cor."
+
+---
+
+## 16. Testes
 
 ### Tipos de teste no projeto
 | Tipo | O que testa | Exemplo |
@@ -363,7 +385,7 @@ Folgas, férias, feriados e compromissos ([time-offs.service.ts](../backend/src/
 
 ---
 
-## 16. Front-end
+## 17. Front-end
 
 - **React** monta a tela a partir do **estado** (o que está escolhido). Mudou o estado, a tela se atualiza.
 - **Componentes**: peças reutilizáveis (`OptionButton`, `Step`, `Alert` em [ui.tsx](../frontend/src/components/ui.tsx)).
@@ -386,7 +408,7 @@ Folgas, férias, feriados e compromissos ([time-offs.service.ts](../backend/src/
 
 ---
 
-## 17. Conta demo (seed)
+## 18. Conta demo (seed)
 
 - **Seed**: script que popula o banco com dados de exemplo ([seed-demo.ts](../backend/src/demo/seed-demo.ts)). Roda com `npm run db:seed`.
 - **Idempotente**: recria só a conta demo e não toca nas outras.
@@ -395,7 +417,7 @@ Folgas, férias, feriados e compromissos ([time-offs.service.ts](../backend/src/
 
 ---
 
-## 18. Deploy e produção
+## 19. Deploy e produção
 
 Ver [ADR 0003](adr/0003-deploy-com-proxy-na-vercel.md).
 
@@ -427,7 +449,7 @@ Navegador ──► Vercel (site React)  ──/api/*──►  Render (API Node
 
 ---
 
-## 19. Como revisar código feito por IA
+## 20. Como revisar código feito por IA
 
 Use isto em todo PR:
 
@@ -441,9 +463,9 @@ Use isto em todo PR:
 8. **Algum dado sensível volta na resposta?** (senha, token, dados de outro cliente)
 9. **Testei a parte visível na mão?**
 10. **Tem um jeito mais simples?**
-11. **Tem `!` (não-nulo) ou `as` forçando tipo?** Pergunte por que nunca seria nulo (seção 16).
-12. **Algum erro pode estar sendo "engolido"?** Um `catch` vazio ou um "devolve null se falhar" esconde problemas (seções 15 e 16).
-13. **Tem segredo no código?** Senha, token ou URL de banco têm que vir de variável de ambiente (seção 18).
+11. **Tem `!` (não-nulo) ou `as` forçando tipo?** Pergunte por que nunca seria nulo (seção 17).
+12. **Algum erro pode estar sendo "engolido"?** Um `catch` vazio ou um "devolve null se falhar" esconde problemas (seções 16 e 17).
+13. **Tem segredo no código?** Senha, token ou URL de banco têm que vir de variável de ambiente (seção 19).
 
 Frases úteis para pedir à IA:
 - "Explica essa parte como se eu fosse júnior."
@@ -453,7 +475,7 @@ Frases úteis para pedir à IA:
 
 ---
 
-## 20. Perguntas para revisar
+## 21. Perguntas para revisar
 
 Tente responder sozinho antes de olhar a seção indicada.
 
@@ -478,27 +500,32 @@ Tente responder sozinho antes de olhar a seção indicada.
 19. O que é idempotência? Como o job garante um lembrete só? *(11)*
 20. O que acontece se o e-mail de confirmação falhar? *(12)*
 21. Desenhe a máquina de estados do agendamento. *(13)*
-22. Diferença entre teste unitário e de integração? *(15)*
-23. O que é teste de mutação? *(15)*
-24. Por que os testes usam um banco separado? *(15)*
-25. Para que serve o proxy `/api` do front? *(16)*
-26. Esconder um botão no front protege os dados? Onde fica a proteção de verdade? *(16)*
-27. Qual o risco de usar `!` no TypeScript? Dê o exemplo do projeto. *(16)*
-28. Por que não usar float para dinheiro? *(8, 16)*
-29. O que é um "falso verde" em testes e como o projeto evita? *(15)*
-30. Por que a Vercel repassa `/api` para o Render em vez de o front chamar o Render direto? *(18)*
-31. O que é `trust proxy` e o que quebraria sem ele? *(18)*
-32. O que acontece com o job de lembretes quando a API "dorme" no plano gratuito? *(11, 18)*
-33. Onde ficam os segredos (senha do banco, segredo do JWT) em produção? *(18)*
-34. Por que dar F5 em `/painel` daria 404 sem configuração, e como o projeto resolve? *(18)*
+22. Diferença entre teste unitário e de integração? *(16)*
+23. O que é teste de mutação? *(16)*
+24. Por que os testes usam um banco separado? *(16)*
+25. Para que serve o proxy `/api` do front? *(17)*
+26. Esconder um botão no front protege os dados? Onde fica a proteção de verdade? *(17)*
+27. Qual o risco de usar `!` no TypeScript? Dê o exemplo do projeto. *(17)*
+28. Por que não usar float para dinheiro? *(8, 17)*
+29. O que é um "falso verde" em testes e como o projeto evita? *(16)*
+30. Por que a Vercel repassa `/api` para o Render em vez de o front chamar o Render direto? *(19)*
+31. O que é `trust proxy` e o que quebraria sem ele? *(19)*
+32. O que acontece com o job de lembretes quando a API "dorme" no plano gratuito? *(11, 19)*
+33. Onde ficam os segredos (senha do banco, segredo do JWT) em produção? *(19)*
+34. Por que dar F5 em `/painel` daria 404 sem configuração, e como o projeto resolve? *(19)*
 35. Como um bloqueio afeta os horários livres sem mudar a função de cálculo? *(14)*
 36. Por que criar um bloqueio não cancela os agendamentos do período? *(14)*
 37. O que é uma união discriminada? Onde o projeto usa? *(14)*
 38. Qual brecha de concorrência existe nos bloqueios e por que ela foi aceita? *(9, 14)*
+39. Por que agregar no banco (GROUP BY) e não em JavaScript? *(15)*
+40. O que é o problema N+1 e como o relatório evita? *(15)*
+41. Como o `$queryRaw` do projeto evita SQL injection? *(15)*
+42. Por que o relatório precisou de SQL puro? *(10, 15)*
+43. Como o relatório trata período sem atendimentos? *(15)*
 
 ---
 
-## 21. Glossário
+## 22. Glossário
 
 | Termo | Significado |
 |---|---|
@@ -518,6 +545,7 @@ Tente responder sozinho antes de olhar a seção indicada.
 | **Função impura** | Função cujo resultado depende de algo de fora (relógio, rede) ou que altera algo de fora |
 | **Health check** | Rota simples (`/health`) que diz se o serviço está de pé |
 | **IaC** | Infraestrutura como código: a configuração do servidor fica num arquivo versionado (`render.yaml`) |
+| **GROUP BY** | Comando SQL que agrupa linhas para calcular totais (SUM, COUNT) por grupo |
 | **Hash** | "Resumo" irreversível de um dado |
 | **Idempotente** | Rodar várias vezes dá o mesmo resultado que rodar uma |
 | **IDOR** | Acessar dados de outro cliente trocando um id |
@@ -531,9 +559,11 @@ Tente responder sozinho antes de olhar a seção indicada.
 | **ORM** | Biblioteca que mapeia tabelas para código (Prisma) |
 | **PR** | Pull Request: pedido para juntar uma branch na main |
 | **Proxy reverso / rewrite** | Servidor que recebe a requisição e repassa para outro (Vercel → Render) |
+| **N+1** | Fazer 1 consulta para a lista e mais 1 para cada item dela, em vez de buscar tudo de uma vez |
 | **Race condition** | Erro causado por duas operações simultâneas |
 | **Rate limit** | Limite de requisições por tempo |
 | **Seed** | Script que popula o banco com dados de exemplo |
+| **SQL injection** | Ataque em que um valor digitado vira parte do comando SQL. Evitado com parâmetros |
 | **Snapshot** | Cópia de um valor no momento (ex.: o preço no agendamento) |
 | **Soft delete** | Desativar em vez de apagar |
 | **SMTP** | Protocolo de envio de e-mail |

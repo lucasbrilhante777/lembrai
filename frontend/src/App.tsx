@@ -7,6 +7,7 @@ import { BookingPage } from "./features/booking/BookingPage.tsx";
 import { CancelPage } from "./features/cancel/CancelPage.tsx";
 import { PanelLayout } from "./features/panel/PanelLayout.tsx";
 import { ProfessionalsPage } from "./features/professionals/ProfessionalsPage.tsx";
+import { ReportsPage } from "./features/reports/ReportsPage.tsx";
 import { ServicesPage } from "./features/services/ServicesPage.tsx";
 import { TimeOffsPage } from "./features/time-offs/TimeOffsPage.tsx";
 import { HomePage } from "./pages/HomePage.tsx";
@@ -34,6 +35,7 @@ export function App() {
           <Route path="servicos" element={<ServicesPage />} />
           <Route path="profissionais" element={<ProfessionalsPage />} />
           <Route path="bloqueios" element={<TimeOffsPage />} />
+          <Route path="relatorios" element={<ReportsPage />} />
         </Route>
       </Route>
 

@@ -1,4 +1,4 @@
-import { formatLongDate } from "../../lib/format.ts";
+import { formatLongDate, formatShortDate as shortDate } from "../../lib/format.ts";
 import type { TimeOff } from "./api.ts";
 
 /** "Dias inteiros: 20/12 a 30/12" | "Dia inteiro: terça-feira, 17 de novembro" | "terça-feira, 17 de novembro, 14:00–16:00" */
@@ -11,9 +11,4 @@ export function describePeriod(timeOff: TimeOff) {
 /** "Todos os profissionais" ou o nome de quem está bloqueado. */
 export function describeWho(timeOff: TimeOff) {
   return timeOff.professional?.name ?? "Todos os profissionais";
-}
-
-function shortDate(date: string) {
-  const [, month, day] = date.split("-");
-  return `${day}/${month}`;
 }
