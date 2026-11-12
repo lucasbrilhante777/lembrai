@@ -44,6 +44,12 @@ export function formatLongDate(date: string) {
   }).format(calendarDate(date));
 }
 
+/** "2026-11-12" -> "12/11" */
+export function formatShortDate(date: string) {
+  const [, month, day] = date.split("-");
+  return `${day}/${month}`;
+}
+
 /** Segunda-feira da semana da data (a semana da agenda vai de segunda a domingo). */
 export function startOfWeek(date: string) {
   const dayOfWeek = calendarDate(date).getUTCDay(); // 0 = domingo
