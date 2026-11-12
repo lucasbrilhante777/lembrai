@@ -63,6 +63,18 @@ function loggedInRoutes(extra: Parameters<typeof mockApi>[0] = {}) {
   };
 }
 
+describe("atalhos de endereço", () => {
+  it.each([
+    ["/login", "Entrar no painel"],
+    ["/cadastrar", "Cadastre seu negócio"],
+  ])("%s leva para a página certa", async (path, heading) => {
+    mockApi({ "GET /auth/me": { status: 401, body: { message: "Não autenticado." } } });
+    renderApp(path);
+
+    expect(await screen.findByRole("heading", { name: heading })).toBeInTheDocument();
+  });
+});
+
 describe("login e proteção do painel", () => {
   it("sem login, quem abre /painel vai para a tela de login", async () => {
     mockApi({ "GET /auth/me": { status: 401, body: { message: "Não autenticado." } } });

@@ -374,6 +374,7 @@ Folgas, férias, feriados e compromissos ([time-offs.service.ts](../backend/src/
 
 ### Painel do dono: o que vale saber
 - **Rota protegida** ([RequireAuth.tsx](../frontend/src/features/auth/RequireAuth.tsx)): sem sessão, manda para `/entrar` e lembra a página que a pessoa queria. É só conforto de tela: **quem protege os dados é a API** (401 sem o cookie). Pergunta comum: "esconder o botão no front é segurança?" Não, nunca.
+- **"404" numa SPA**: o servidor sempre devolve o `index.html` (status 200), e quem mostra "Página não encontrada" é o React, quando nenhuma rota casa com o endereço. Para endereços que as pessoas digitam por hábito (`/login`, `/cadastrar`), há **redirecionamentos** para `/entrar` e `/cadastro`. O `replace` troca a entrada no histórico, então o "voltar" do navegador não cai de novo no atalho.
 - **O perigo do `!` no TypeScript**: `session.data!` diz "confia, nunca é nulo". Na hora do "Sair", ele **era** nulo por um instante, e a tela quebrava. A correção foi a rota protegida **entregar** a sessão às telas de dentro (contexto da rota), que só existem com sessão válida. Todo `!` merece um "tem certeza?" na revisão.
 - **401 global**: se qualquer chamada do painel receber 401 (sessão expirou), o cache marca "deslogado", e o usuário volta para o login ([query-client.ts](../frontend/src/lib/query-client.ts)).
 - **Falhar alto** ([api.ts](../frontend/src/lib/api.ts)): uma resposta 200 que não é JSON (ex.: o proxy fora do ar devolvendo o HTML do site) vira erro. Antes, ela virava "ninguém logado" em silêncio e escondia o problema.
