@@ -12,6 +12,7 @@ import { healthRoutes } from "./routes/health.routes.js";
 import { professionalsRoutes } from "./routes/professionals.routes.js";
 import { publicRoutes } from "./routes/public.routes.js";
 import { servicesRoutes } from "./routes/services.routes.js";
+import { timeOffsRoutes } from "./routes/time-offs.routes.js";
 
 // Monta a aplicação sem chamar listen(). Assim os testes usam o app
 // direto com o Supertest, sem abrir porta de verdade.
@@ -35,6 +36,7 @@ export function createApp() {
   app.use("/services", ensureAuthenticated, servicesRoutes);
   app.use("/professionals", ensureAuthenticated, professionalsRoutes);
   app.use("/appointments", ensureAuthenticated, appointmentsRoutes);
+  app.use("/time-offs", ensureAuthenticated, timeOffsRoutes);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

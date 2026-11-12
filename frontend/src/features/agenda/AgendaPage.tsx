@@ -9,6 +9,8 @@ import { useProfessionals } from "../professionals/api.ts";
 import { useServices } from "../services/api.ts";
 import { type Appointment, type OwnerTargetStatus, useAppointments, useUpdateStatus } from "./api.ts";
 import { AppointmentCard } from "./AppointmentCard.tsx";
+import { type TimeOff, timeOffsOnDay, useTimeOffs } from "../time-offs/api.ts";
+import { describePeriod, describeWho } from "../time-offs/describe.ts";
 
 type View = "day" | "week";
 
@@ -26,6 +28,9 @@ export function AgendaPage() {
   const to = view === "day" ? anchor : addDays(from, 6);
 
   const agenda = useAppointments({ from, to, professionalId });
+  const timeOffs = useTimeOffs({ from, to });
+  // Com filtro de profissional: só os bloqueios dele e os do estabelecimento inteiro.
+  const visibleTimeOffs = (timeOffs.data ?? []).filter((t) => !professionalId || !t.professional || t.professional.id === professionalId);
   const professionals = useProfessionals();
   const services = useServices();
   const updateStatus = useUpdateStatus();
@@ -110,12 +115,15 @@ export function AgendaPage() {
         <>
           <Summary appointments={agenda.data.appointments} />
           {view === "day" ? (
-            <DayList
-              now={now}
-              appointments={agenda.data.appointments}
-              busyId={updateStatus.isPending ? updateStatus.variables?.id : undefined}
-              onChangeStatus={(id, status) => updateStatus.mutate({ id, status })}
-            />
+            <div className="space-y-2">
+              <DayBlocks timeOffs={timeOffsOnDay(visibleTimeOffs, anchor)} />
+              <DayList
+                now={now}
+                appointments={agenda.data.appointments}
+                busyId={updateStatus.isPending ? updateStatus.variables?.id : undefined}
+                onChangeStatus={(id, status) => updateStatus.mutate({ id, status })}
+              />
+            </div>
           ) : (
             <div className="space-y-6">
               {Array.from({ length: 7 }, (_, i) => addDays(from, i)).map((day) => (
@@ -124,8 +132,9 @@ export function AgendaPage() {
                     {formatLongDate(day)}
                     {day === today && " (hoje)"}
                   </h2>
+                  <DayBlocks timeOffs={timeOffsOnDay(visibleTimeOffs, day)} />
                   <DayList
-              now={now}
+                    now={now}
                     appointments={agenda.data.appointments.filter((a) => a.date === day)}
                     busyId={updateStatus.isPending ? updateStatus.variables?.id : undefined}
                     onChangeStatus={(id, status) => updateStatus.mutate({ id, status })}
@@ -192,6 +201,22 @@ function Summary({ appointments }: { appointments: Appointment[] }) {
         </Card>
       ))}
     </dl>
+  );
+}
+
+// Faixa "Bloqueado" no topo do dia: o dono vê na agenda por que não há horários (folga, feriado...).
+function DayBlocks({ timeOffs }: { timeOffs: TimeOff[] }) {
+  if (timeOffs.length === 0) return null;
+  return (
+    <ul className="mb-2 space-y-1">
+      {timeOffs.map((t) => (
+        <li key={t.id} className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          🚫 <strong>Bloqueado</strong>: {describeWho(t)}, {t.allDay ? "dia inteiro" : `${t.startTime}–${t.endTime}`}
+          {t.reason && ` (${t.reason})`}
+          {t.allDay && t.startDate !== t.endDate && <span className="text-amber-700"> · {describePeriod(t)}</span>}
+        </li>
+      ))}
+    </ul>
   );
 }
 

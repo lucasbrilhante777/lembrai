@@ -5,6 +5,7 @@ import { isAppointmentOverlapError } from "../lib/db-errors.js";
 import { prisma } from "../lib/prisma.js";
 import type { AvailabilityQuery, CreateAppointmentInput } from "../schemas/public.schemas.js";
 import * as notifications from "./notifications.service.js";
+import { findTimeOffsFor } from "./time-offs.service.js";
 import {
   addDays,
   dayOfWeek,
@@ -197,7 +198,7 @@ async function loadBookingContext(establishmentId: string, serviceId: string, pr
 }
 
 async function listFreeSlots(timezone: string, date: string, context: BookingContext, now: Date) {
-  // Agendamentos ativos que encostam no dia LOCAL (meia-noite a meia-noite no fuso do estabelecimento).
+  // Agendamentos ativos e bloqueios que encostam no dia LOCAL (meia-noite a meia-noite no fuso do estabelecimento).
   const dayStart = localDateTimeToUtc(date, "00:00", timezone);
   const dayEnd = localDateTimeToUtc(addDays(date, 1), "00:00", timezone);
   const busy = await prisma.appointment.findMany({
@@ -209,13 +210,15 @@ async function listFreeSlots(timezone: string, date: string, context: BookingCon
     },
     select: { startAt: true, endAt: true },
   });
+  // Bloqueios (folga, feriado...) entram como "ocupado": para o cálculo, tanto faz o motivo.
+  const timeOffs = await findTimeOffsFor(context.professional.establishmentId, context.professional.id, dayStart, dayEnd);
 
   return computeAvailableSlots({
     date,
     timezone,
     workingHours: context.workingHours,
     durationMinutes: context.service.durationMinutes,
-    busy,
+    busy: [...busy, ...timeOffs],
     now,
   });
 }

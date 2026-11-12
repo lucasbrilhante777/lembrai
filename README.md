@@ -72,8 +72,11 @@ O **profissional** (ex.: o barbeiro funcionário) existe no sistema para ter age
 - [x] E-mail de confirmação ao agendar e lembrete por e-mail 24h antes (envio único, mesmo com várias instâncias)
 - [x] Cancelamento pelo cliente através do link no e-mail
 
-### v1.1+
-Bloqueios e folgas, histórico do cliente, relatório de faturamento, recuperação de senha, planos Free/Pro. Detalhes no [roadmap](#roadmap).
+### v1.1
+- [x] Bloqueios de agenda: folgas, férias e feriados, de um profissional ou do estabelecimento inteiro, por dias ou por horas. Os horários bloqueados somem da página pública, e o painel avisa sobre agendamentos que já existiam no período
+
+### Próximos
+Histórico do cliente, relatório de faturamento, recuperação de senha, planos Free/Pro. Detalhes no [roadmap](#roadmap).
 
 ## Stack
 
@@ -245,7 +248,7 @@ Projeto desenvolvido sozinho, em sprints semanais.
 ## Roadmap
 
 **Produto**
-- [ ] Bloqueios de agenda (folgas, feriados, férias)
+- [x] Bloqueios de agenda (folgas, feriados, férias)
 - [ ] Histórico do cliente (agendamentos anteriores, faltas)
 - [ ] Relatório de faturamento por período (soma dos agendamentos `COMPLETED` pelo preço salvo no agendamento)
 - [ ] Recuperação de senha e verificação de e-mail
