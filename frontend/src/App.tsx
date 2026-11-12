@@ -1,4 +1,4 @@
-import { Route, Routes } from "react-router";
+import { Navigate, Route, Routes } from "react-router";
 import { AgendaPage } from "./features/agenda/AgendaPage.tsx";
 import { LoginPage } from "./features/auth/LoginPage.tsx";
 import { RegisterPage } from "./features/auth/RegisterPage.tsx";
@@ -24,6 +24,10 @@ export function App() {
       {/* Dono do negócio */}
       <Route path="/entrar" element={<LoginPage />} />
       <Route path="/cadastro" element={<RegisterPage />} />
+      {/* Endereços que as pessoas digitam por hábito. `replace` troca a entrada no histórico,
+          então o botão "voltar" não cai de novo no atalho. */}
+      <Route path="/login" element={<Navigate to="/entrar" replace />} />
+      <Route path="/cadastrar" element={<Navigate to="/cadastro" replace />} />
       <Route element={<RequireAuth />}>
         <Route path="/painel" element={<PanelLayout />}>
           <Route index element={<AgendaPage />} />
