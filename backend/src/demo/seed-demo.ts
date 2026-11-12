@@ -91,7 +91,12 @@ export async function seedDemo(prisma: PrismaClient, now = new Date()) {
         workingHours: { create: workingHours },
       },
     });
-    professionals.push({ id: created.id, services: p.services.map((key) => services.get(key)!), workingHours });
+    professionals.push({
+      id: created.id,
+      name: p.name,
+      services: p.services.map((key) => services.get(key)!),
+      workingHours,
+    });
   }
 
   // 5. Clientes
@@ -104,10 +109,35 @@ export async function seedDemo(prisma: PrismaClient, now = new Date()) {
     })),
   });
 
-  // 6. Agendamentos: percorre cada dia e cada expediente preenchendo horários.
+  // 6. Bloqueios de exemplo: um feriado (estabelecimento inteiro) e uma consulta médica do Pedro.
+  const today = localToday(DEMO.timezone, now);
+  const pedro = professionals.find((p) => p.name === "Pedro")!;
+  const holiday = addDays(today, 10);
+  const doctorDay = addDays(today, 2);
+  const timeOffs = [
+    {
+      professionalId: null,
+      reason: "Feriado municipal",
+      startAt: localDateTimeToUtc(holiday, "00:00", DEMO.timezone),
+      endAt: localDateTimeToUtc(addDays(holiday, 1), "00:00", DEMO.timezone),
+    },
+    {
+      professionalId: pedro.id,
+      reason: "Consulta médica",
+      startAt: localDateTimeToUtc(doctorDay, "14:00", DEMO.timezone),
+      endAt: localDateTimeToUtc(doctorDay, "16:00", DEMO.timezone),
+    },
+  ];
+  await prisma.timeOff.createMany({ data: timeOffs.map((t) => ({ ...t, establishmentId })) });
+
+  const isBlocked = (professionalId: string, startAt: Date, endAt: Date) =>
+    timeOffs.some(
+      (t) => (t.professionalId === null || t.professionalId === professionalId) && startAt < t.endAt && endAt > t.startAt,
+    );
+
+  // 7. Agendamentos: percorre cada dia e cada expediente preenchendo horários.
   //    Como cada profissional só "anda para frente" no tempo, nunca há sobreposição (e a constraint do banco confere).
   const appointments = [];
-  const today = localToday(DEMO.timezone, now);
 
   for (let offset = -DAYS_BACK; offset <= DAYS_AHEAD; offset++) {
     const date = addDays(today, offset);
@@ -123,6 +153,12 @@ export async function seedDemo(prisma: PrismaClient, now = new Date()) {
 
           const startAt = localDateTimeToUtc(date, minutesToTime(cursor), DEMO.timezone);
           const endAt = new Date(startAt.getTime() + service.durationMinutes * 60_000);
+
+          // Ninguém agenda dentro de um bloqueio (a API também não deixaria).
+          if (isBlocked(professional.id, startAt, endAt)) {
+            cursor += 15;
+            continue;
+          }
 
           // Passado bem cheio (parece uma barbearia de verdade); futuro com espaço para agendar na demo.
           const fillRate = startAt < now ? 0.7 : 0.35;

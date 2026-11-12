@@ -54,6 +54,7 @@ function loggedInRoutes(extra: Parameters<typeof mockApi>[0] = {}) {
       status: 200,
       body: [{ id: "s1", name: "Corte", durationMinutes: 30, priceCents: 3500, active: true }],
     },
+    "GET /time-offs": { status: 200, body: [] },
     "GET /appointments": {
       status: 200,
       body: { from: today, to: today, timezone: TZ, appointments: [concluido, passado, futuro] },
@@ -148,6 +149,35 @@ describe("agenda", () => {
 
     const resumo = screen.getByText("Receita (concluídos)").closest("div")!;
     expect(within(resumo).getByText(/R\$\s50,00/)).toBeInTheDocument(); // só o concluído conta
+  });
+
+  it("mostra os bloqueios do dia no topo da agenda", async () => {
+    const fetchMock = mockApi(
+      loggedInRoutes({
+        "GET /time-offs": {
+          status: 200,
+          body: [
+            {
+              id: "t1",
+              professional: null,
+              reason: "Feriado",
+              startAt: "",
+              endAt: "",
+              allDay: true,
+              startDate: today,
+              endDate: today,
+              startTime: "00:00",
+              endTime: "00:00",
+            },
+          ],
+        },
+      }),
+    );
+    renderApp("/painel");
+
+    expect(await screen.findByText(/Todos os profissionais, dia inteiro \(Feriado\)/)).toBeInTheDocument();
+    const url = fetchMock.mock.calls.map(([input]) => String(input)).find((u) => u.includes("/time-offs"));
+    expect(url).toContain(`from=${today}&to=${today}`);
   });
 
   it("consulta o dia de hoje e navega para o próximo", async () => {

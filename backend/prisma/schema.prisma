@@ -48,6 +48,7 @@ model Establishment {
   services      Service[]
   customers     Customer[]
   appointments  Appointment[]
+  timeOffs      TimeOff[]
 
   @@index([userId])
 }
@@ -66,6 +67,7 @@ model Professional {
   services      ProfessionalService[]
   workingHours  WorkingHours[]
   appointments  Appointment[]
+  timeOffs      TimeOff[]
 
   @@index([establishmentId])
 }
@@ -162,4 +164,24 @@ model Appointment {
 
   @@index([establishmentId, startAt])
   @@index([status, startAt])
+}
+
+/// Bloqueio de agenda: folga, férias, feriado, consulta médica...
+/// Sem profissional = vale para o estabelecimento inteiro (ex.: feriado).
+/// Não cancela agendamentos que já existiam no período: o painel avisa e o dono decide.
+model TimeOff {
+  id              String   @id @default(uuid())
+  establishmentId String
+  /// null = todos os profissionais
+  professionalId  String?
+  /// Sempre em UTC (ver ADR 0002); [startAt, endAt) como nos agendamentos
+  startAt         DateTime @db.Timestamptz(3)
+  endAt           DateTime @db.Timestamptz(3)
+  reason          String?
+  createdAt       DateTime @default(now()) @db.Timestamptz(3)
+
+  establishment Establishment @relation(fields: [establishmentId], references: [id], onDelete: Cascade)
+  professional  Professional? @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  @@index([establishmentId, startAt])
 }

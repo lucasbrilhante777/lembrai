@@ -8,6 +8,7 @@ import { CancelPage } from "./features/cancel/CancelPage.tsx";
 import { PanelLayout } from "./features/panel/PanelLayout.tsx";
 import { ProfessionalsPage } from "./features/professionals/ProfessionalsPage.tsx";
 import { ServicesPage } from "./features/services/ServicesPage.tsx";
+import { TimeOffsPage } from "./features/time-offs/TimeOffsPage.tsx";
 import { HomePage } from "./pages/HomePage.tsx";
 import { NotFoundPage } from "./pages/NotFoundPage.tsx";
 
@@ -28,6 +29,7 @@ export function App() {
           <Route index element={<AgendaPage />} />
           <Route path="servicos" element={<ServicesPage />} />
           <Route path="profissionais" element={<ProfessionalsPage />} />
+          <Route path="bloqueios" element={<TimeOffsPage />} />
         </Route>
       </Route>
 

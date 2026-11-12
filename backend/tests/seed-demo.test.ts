@@ -61,6 +61,22 @@ describe("conta demo (seed)", () => {
     expect(res.body.slots.length).toBeGreaterThan(0);
   });
 
+  it("tem bloqueios de exemplo, sem nenhum agendamento dentro deles", async () => {
+    const timeOffs = await prisma.timeOff.findMany();
+    expect(timeOffs.map((t) => t.reason).sort()).toEqual(["Consulta médica", "Feriado municipal"]);
+
+    for (const t of timeOffs) {
+      const inside = await prisma.appointment.count({
+        where: {
+          ...(t.professionalId ? { professionalId: t.professionalId } : {}),
+          startAt: { lt: t.endAt },
+          endAt: { gt: t.startAt },
+        },
+      });
+      expect(inside).toBe(0);
+    }
+  });
+
   it("o job de lembretes nunca envia e-mail para os clientes fictícios", async () => {
     const send = vi.spyOn(mailer, "send");
 

@@ -23,13 +23,14 @@ Cada seção termina com um bloco **🎤 Em entrevista**, uma resposta curta que
 11. [Jobs agendados e idempotência](#11-jobs-agendados-e-idempotência)
 12. [E-mails](#12-e-mails)
 13. [Máquina de estados](#13-máquina-de-estados)
-14. [Testes](#14-testes)
-15. [Front-end](#15-front-end)
-16. [Conta demo (seed)](#16-conta-demo-seed)
-17. [Deploy e produção](#17-deploy-e-produção)
-18. [Como revisar código feito por IA](#18-como-revisar-código-feito-por-ia)
-19. [Perguntas para revisar](#19-perguntas-para-revisar)
-20. [Glossário](#20-glossário)
+14. [Bloqueios de agenda](#14-bloqueios-de-agenda)
+15. [Testes](#15-testes)
+16. [Front-end](#16-front-end)
+17. [Conta demo (seed)](#17-conta-demo-seed)
+18. [Deploy e produção](#18-deploy-e-produção)
+19. [Como revisar código feito por IA](#19-como-revisar-código-feito-por-ia)
+20. [Perguntas para revisar](#20-perguntas-para-revisar)
+21. [Glossário](#21-glossário)
 
 ---
 
@@ -250,7 +251,7 @@ Cliente B: grava 09:00                   ← dois clientes no mesmo horário!
 | **Controle otimista** | Mudança de status pelo dono ([appointments.service.ts](../backend/src/services/appointments.service.ts)) | `UPDATE ... WHERE status = <o que eu li>`. Se outra pessoa mudou no meio, 0 linhas são alteradas, e o dono recebe "acabou de ser alterado" em vez de sobrescrever em silêncio |
 | **Reserva atômica** | Job de lembretes ([reminders.job.ts](../backend/src/jobs/reminders.job.ts)) | `UPDATE ... WHERE reminderSentAt IS NULL`. Só uma execução consegue "reservar" o envio |
 
-**Como foi provado:** testes com `Promise.all` (dois pedidos ao mesmo tempo) e um teste que **força** o caminho da constraint, fazendo a checagem da API "não enxergar" o conflito. Para garantir que esse teste vale, a conversão do erro foi desligada de propósito, e o teste falhou com 500. Isso é um **teste de mutação** (seção 14).
+**Como foi provado:** testes com `Promise.all` (dois pedidos ao mesmo tempo) e um teste que **força** o caminho da constraint, fazendo a checagem da API "não enxergar" o conflito. Para garantir que esse teste vale, a conversão do erro foi desligada de propósito, e o teste falhou com 500. Isso é um **teste de mutação** (seção 15).
 
 🎤 **Em entrevista:** "O risco era dois clientes pegarem o mesmo horário ao mesmo tempo. A checagem na aplicação não resolve isso sozinha, por causa da race condition. Coloquei uma exclusion constraint no Postgres, com ranges de tempo por profissional, e a API traduz a violação em 409. Tenho teste com requisições simultâneas e um teste que força o caminho da constraint."
 
@@ -318,7 +319,27 @@ Um agendamento passa por **estados**, e só algumas transições são permitidas
 
 ---
 
-## 14. Testes
+## 14. Bloqueios de agenda
+
+Folgas, férias, feriados e compromissos ([time-offs.service.ts](../backend/src/services/time-offs.service.ts)).
+
+| Ponto | O que vale saber |
+|---|---|
+| **Modelo** | Tabela `TimeOff` com `startAt`/`endAt` em UTC. `professionalId` **nulo = estabelecimento inteiro** (feriado). Um campo opcional com significado claro evitou criar uma segunda tabela |
+| **Validação com união discriminada** | O campo `kind` decide o formato: `"days"` (de `startDate` a `endDate`) ou `"hours"` (`date`, `startTime`, `endTime`). O Zod valida cada variação com os campos certos ([time-offs.schemas.ts](../backend/src/schemas/time-offs.schemas.ts)) |
+| **Fuso** | O dono pensa em hora local; o backend converte para UTC (seção 10). "Dias inteiros" vai de 00:00 do primeiro dia até 00:00 do dia seguinte ao último: o mesmo intervalo `[início, fim)` dos agendamentos |
+| **Reaproveitar o algoritmo** | Para o cálculo de horários livres, um bloqueio é só mais um intervalo "ocupado". A função pura `computeAvailableSlots` **não mudou nada**: só recebe mais intervalos. Bom sinal de design |
+| **Decisão de produto** | Criar um bloqueio **não cancela** quem já tinha marcado. A API devolve esses agendamentos e o painel avisa o dono, que decide (e, se cancelar, o cliente é avisado por e-mail) |
+| **Limite consciente** | Entre agendamentos, o banco garante "sem sobreposição" (seção 9). Entre **bloqueio e agendamento** não há essa garantia: são tabelas diferentes, e a exclusion constraint funciona dentro de uma tabela. A brecha é pequena (o dono bloquear no mesmo segundo em que um cliente agenda) e o efeito aparece como "conflito" no painel. Saber explicar um limite aceito também conta pontos |
+| **DELETE de verdade** | Diferente de serviço e profissional (seção 8), bloqueio pode ser apagado: nada depende do histórico dele |
+
+**Detalhe do Prisma 7:** depois de criar uma migration, o `migrate dev` **não** regera mais o client sozinho. Sem `npx prisma generate`, o TypeScript não "enxerga" a tabela nova.
+
+🎤 **Em entrevista:** "Os bloqueios podem ser de um profissional ou do estabelecimento todo, em dias inteiros ou por horas, sempre convertidos para UTC. Para os horários livres, eles entram como intervalos ocupados, então a função de cálculo não mudou. Por decisão de produto, um bloqueio não cancela ninguém automaticamente: o painel mostra os conflitos e o dono decide. E sei onde está o limite: não há constraint no banco entre bloqueio e agendamento, e aceitei essa janela pequena de corrida."
+
+---
+
+## 15. Testes
 
 ### Tipos de teste no projeto
 | Tipo | O que testa | Exemplo |
@@ -342,7 +363,7 @@ Um agendamento passa por **estados**, e só algumas transições são permitidas
 
 ---
 
-## 15. Front-end
+## 16. Front-end
 
 - **React** monta a tela a partir do **estado** (o que está escolhido). Mudou o estado, a tela se atualiza.
 - **Componentes**: peças reutilizáveis (`OptionButton`, `Step`, `Alert` em [ui.tsx](../frontend/src/components/ui.tsx)).
@@ -364,7 +385,7 @@ Um agendamento passa por **estados**, e só algumas transições são permitidas
 
 ---
 
-## 16. Conta demo (seed)
+## 17. Conta demo (seed)
 
 - **Seed**: script que popula o banco com dados de exemplo ([seed-demo.ts](../backend/src/demo/seed-demo.ts)). Roda com `npm run db:seed`.
 - **Idempotente**: recria só a conta demo e não toca nas outras.
@@ -373,7 +394,7 @@ Um agendamento passa por **estados**, e só algumas transições são permitidas
 
 ---
 
-## 17. Deploy e produção
+## 18. Deploy e produção
 
 Ver [ADR 0003](adr/0003-deploy-com-proxy-na-vercel.md).
 
@@ -405,7 +426,7 @@ Navegador ──► Vercel (site React)  ──/api/*──►  Render (API Node
 
 ---
 
-## 18. Como revisar código feito por IA
+## 19. Como revisar código feito por IA
 
 Use isto em todo PR:
 
@@ -419,9 +440,9 @@ Use isto em todo PR:
 8. **Algum dado sensível volta na resposta?** (senha, token, dados de outro cliente)
 9. **Testei a parte visível na mão?**
 10. **Tem um jeito mais simples?**
-11. **Tem `!` (não-nulo) ou `as` forçando tipo?** Pergunte por que nunca seria nulo (seção 15).
-12. **Algum erro pode estar sendo "engolido"?** Um `catch` vazio ou um "devolve null se falhar" esconde problemas (seções 14 e 15).
-13. **Tem segredo no código?** Senha, token ou URL de banco têm que vir de variável de ambiente (seção 17).
+11. **Tem `!` (não-nulo) ou `as` forçando tipo?** Pergunte por que nunca seria nulo (seção 16).
+12. **Algum erro pode estar sendo "engolido"?** Um `catch` vazio ou um "devolve null se falhar" esconde problemas (seções 15 e 16).
+13. **Tem segredo no código?** Senha, token ou URL de banco têm que vir de variável de ambiente (seção 18).
 
 Frases úteis para pedir à IA:
 - "Explica essa parte como se eu fosse júnior."
@@ -431,7 +452,7 @@ Frases úteis para pedir à IA:
 
 ---
 
-## 19. Perguntas para revisar
+## 20. Perguntas para revisar
 
 Tente responder sozinho antes de olhar a seção indicada.
 
@@ -456,23 +477,27 @@ Tente responder sozinho antes de olhar a seção indicada.
 19. O que é idempotência? Como o job garante um lembrete só? *(11)*
 20. O que acontece se o e-mail de confirmação falhar? *(12)*
 21. Desenhe a máquina de estados do agendamento. *(13)*
-22. Diferença entre teste unitário e de integração? *(14)*
-23. O que é teste de mutação? *(14)*
-24. Por que os testes usam um banco separado? *(14)*
-25. Para que serve o proxy `/api` do front? *(15)*
-26. Esconder um botão no front protege os dados? Onde fica a proteção de verdade? *(15)*
-27. Qual o risco de usar `!` no TypeScript? Dê o exemplo do projeto. *(15)*
-28. Por que não usar float para dinheiro? *(8, 15)*
-29. O que é um "falso verde" em testes e como o projeto evita? *(14)*
-30. Por que a Vercel repassa `/api` para o Render em vez de o front chamar o Render direto? *(17)*
-31. O que é `trust proxy` e o que quebraria sem ele? *(17)*
-32. O que acontece com o job de lembretes quando a API "dorme" no plano gratuito? *(11, 17)*
-33. Onde ficam os segredos (senha do banco, segredo do JWT) em produção? *(17)*
-34. Por que dar F5 em `/painel` daria 404 sem configuração, e como o projeto resolve? *(17)*
+22. Diferença entre teste unitário e de integração? *(15)*
+23. O que é teste de mutação? *(15)*
+24. Por que os testes usam um banco separado? *(15)*
+25. Para que serve o proxy `/api` do front? *(16)*
+26. Esconder um botão no front protege os dados? Onde fica a proteção de verdade? *(16)*
+27. Qual o risco de usar `!` no TypeScript? Dê o exemplo do projeto. *(16)*
+28. Por que não usar float para dinheiro? *(8, 16)*
+29. O que é um "falso verde" em testes e como o projeto evita? *(15)*
+30. Por que a Vercel repassa `/api` para o Render em vez de o front chamar o Render direto? *(18)*
+31. O que é `trust proxy` e o que quebraria sem ele? *(18)*
+32. O que acontece com o job de lembretes quando a API "dorme" no plano gratuito? *(11, 18)*
+33. Onde ficam os segredos (senha do banco, segredo do JWT) em produção? *(18)*
+34. Por que dar F5 em `/painel` daria 404 sem configuração, e como o projeto resolve? *(18)*
+35. Como um bloqueio afeta os horários livres sem mudar a função de cálculo? *(14)*
+36. Por que criar um bloqueio não cancela os agendamentos do período? *(14)*
+37. O que é uma união discriminada? Onde o projeto usa? *(14)*
+38. Qual brecha de concorrência existe nos bloqueios e por que ela foi aceita? *(9, 14)*
 
 ---
 
-## 20. Glossário
+## 21. Glossário
 
 | Termo | Significado |
 |---|---|
@@ -513,6 +538,7 @@ Tente responder sozinho antes de olhar a seção indicada.
 | **SMTP** | Protocolo de envio de e-mail |
 | **SQLSTATE** | Código de erro padronizado do banco (ex.: `23P01`) |
 | **Timing attack** | Descobrir informação medindo o tempo de resposta |
+| **União discriminada** | Tipo com várias formas, escolhidas por um campo (ex.: `kind: "days" | "hours"`) |
 | **UTC / IANA** | Horário universal / nome padrão de fuso (`America/Recife`) |
 | **Variável de ambiente** | Configuração passada para o programa de fora do código (`DATABASE_URL`), diferente em cada ambiente |
 | **X-Forwarded-For** | Cabeçalho em que os proxies anotam o IP de quem fez a requisição |

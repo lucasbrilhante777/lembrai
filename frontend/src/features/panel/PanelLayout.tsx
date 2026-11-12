@@ -41,6 +41,7 @@ export function PanelLayout() {
           </PanelLink>
           <PanelLink to="/painel/servicos">Serviços</PanelLink>
           <PanelLink to="/painel/profissionais">Profissionais</PanelLink>
+          <PanelLink to="/painel/bloqueios">Bloqueios</PanelLink>
         </nav>
       </header>
 
