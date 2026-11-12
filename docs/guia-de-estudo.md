@@ -379,7 +379,7 @@ Ver [ADR 0003](adr/0003-deploy-com-proxy-na-vercel.md).
 
 ```
 Navegador ──► Vercel (site React)  ──/api/*──►  Render (API Node)  ──►  Neon (Postgres)
-              lembrai.vercel.app     rewrite      lembrai-api.onrender.com
+              lembraiapp.vercel.app  rewrite      lembrai-api.onrender.com
 ```
 
 | Conceito | No Lembrai |
@@ -394,6 +394,12 @@ Navegador ──► Vercel (site React)  ──/api/*──►  Render (API Node
 | **Cold start** | O plano gratuito do Render "dorme" sem uso. A 1ª requisição demora, e o job de lembretes para. Mitigação: um monitor externo chama `/health` a cada 10 min |
 | **Degradar com elegância** | Sem SMTP configurado, o e-mail fica desligado (com aviso no log), e o resto do sistema funciona |
 | **Health check** | `GET /health`: o Render usa para saber se a API subiu antes de trocar a versão |
+
+**Como o deploy foi conferido** (em vez de "abriu, então funciona"):
+1. API direto: `/health` respondeu, a página pública da demo veio do banco (prova que as migrations e o seed rodaram) e o login da demo deu 200.
+2. Pelo site: `/api/health` via Vercel (prova o rewrite) e F5 em `/painel` com 200 (prova o fallback da SPA).
+3. **Cookie:** o login pelo site gravou o cookie no domínio **da Vercel**, com `HttpOnly` e `Secure`. `/auth/me` funcionou com ele e deu 401 sem ele. É a prova de que a decisão do ADR 0003 funciona.
+4. **Um erro real no caminho:** a Vercel publicou a `main` antes de o `vercel.json` entrar. O site abria, mas `/api` dava 404. Lição: o front pode estar no ar e mesmo assim quebrado, então teste as integrações, não só a página inicial.
 
 🎤 **Em entrevista:** "O front está na Vercel e a API no Render, com Postgres no Neon. A Vercel faz rewrite de `/api` para a API, então tudo fica na mesma origem e o cookie httpOnly com SameSite=Lax funciona sem CORS. Configurei `trust proxy` para o rate limit enxergar o IP real. O deploy é descrito em código, aplica as migrations e só acontece com o CI verde. No plano gratuito a API hiberna, então uso um monitor externo e o job de lembretes é idempotente: um atraso adia o lembrete, mas nunca duplica."
 

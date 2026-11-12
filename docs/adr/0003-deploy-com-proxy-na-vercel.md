@@ -13,7 +13,7 @@ O Lembrai tem três partes para colocar no ar, num orçamento de portfólio (pla
 | API (Node + Express) | **Render** | Plano gratuito para web services Node |
 | Banco (PostgreSQL) | **Neon** | Postgres gerenciado gratuito, suporta a extensão `btree_gist` (ADR 0001) |
 
-O problema: o login usa um **cookie `httpOnly` com `SameSite=Lax`** (ver guia de estudo, seção 6). Se o front estiver em `lembrai.vercel.app` e a API em `lembrai-api.onrender.com`, são **sites diferentes**, e o navegador não envia o cookie nas chamadas da API. Contornar isso exigiria `SameSite=None` e CORS com credenciais, o que deixa a proteção contra CSRF mais fraca e a configuração mais frágil.
+O problema: o login usa um **cookie `httpOnly` com `SameSite=Lax`** (ver guia de estudo, seção 6). Se o front estiver em `lembraiapp.vercel.app` e a API em `lembrai-api.onrender.com`, são **sites diferentes**, e o navegador não envia o cookie nas chamadas da API. Contornar isso exigiria `SameSite=None` e CORS com credenciais, o que deixa a proteção contra CSRF mais fraca e a configuração mais frágil.
 
 ## Decisão
 
