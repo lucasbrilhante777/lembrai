@@ -115,7 +115,7 @@ describe("ficha do cliente", () => {
     expect(screen.getByRole("link", { name: "(81) 98888-7777" })).toHaveAttribute("href", "tel:81988887777");
     expect(screen.getByRole("link", { name: "ana@example.com" })).toHaveAttribute("href", "mailto:ana@example.com");
     expect(screen.getByText("Ticket médio").closest("div")).toHaveTextContent(/R\$\s32,50/);
-    expect(screen.getByText("Próximo horário marcado: 01/12/2026.")).toBeInTheDocument();
+    expect(screen.getByText("Próximo horário marcado: 01/12/2026 às 09:00.")).toBeInTheDocument(); // 12:00 UTC = 09:00 em Recife
 
     const history = screen.getAllByRole("listitem").map((li) => li.textContent);
     expect(history[0]).toContain("domingo, 25 de outubro às 09:00");

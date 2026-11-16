@@ -20,7 +20,11 @@ export function Step({ number, title, children }: { number: number; title: strin
   );
 }
 
-/** Botão de escolha (serviço, profissional, dia, horário). aria-pressed diz ao leitor de tela qual está marcado. */
+/**
+ * Botão de escolha (serviço, profissional, dia, horário). aria-pressed diz ao leitor de tela qual está marcado.
+ * O alinhamento do texto fica com quem usa: se a base forçasse "text-left", o "text-center" de quem usa
+ * poderia perder (no Tailwind, quem ganha entre duas classes conflitantes é a ordem no CSS, não no HTML).
+ */
 export function OptionButton({
   selected,
   className = "",
@@ -30,7 +34,7 @@ export function OptionButton({
     <button
       type="button"
       aria-pressed={selected}
-      className={`rounded-xl border text-left transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600 disabled:cursor-not-allowed disabled:opacity-50 ${
+      className={`rounded-xl border transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600 disabled:cursor-not-allowed disabled:opacity-50 ${
         selected
           ? "border-teal-600 bg-teal-50 ring-1 ring-teal-600"
           : "border-slate-200 bg-white hover:border-teal-400 hover:bg-teal-50/40"

@@ -51,6 +51,14 @@ export function formatInstantDate(iso: string, timezone: string) {
   );
 }
 
+/** Instante (ISO, UTC) -> "17/11/2026 às 09:30", no fuso do estabelecimento. */
+export function formatInstantDateTime(iso: string, timezone: string) {
+  const time = new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: timezone }).format(
+    new Date(iso),
+  );
+  return `${formatInstantDate(iso, timezone)} às ${time}`;
+}
+
 /** "81999999999" -> "(81) 99999-9999" */
 export function formatPhone(digits: string) {
   const local = digits.length > 11 ? digits.slice(-11) : digits;
