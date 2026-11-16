@@ -26,6 +26,7 @@ export type CustomerDetail = CustomerListItem & {
     date: string;
     time: string;
     priceCents: number;
+    attendeeName: string | null;
     service: string;
     professional: string;
   }[];

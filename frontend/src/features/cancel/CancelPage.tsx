@@ -17,6 +17,7 @@ type AppointmentSummary = {
   establishment: { name: string; slug: string };
   service: { name: string };
   professional: { name: string };
+  attendeeName: string | null;
 };
 
 export function CancelPage() {
@@ -86,6 +87,12 @@ function Content({
         <dd className="font-medium">{appointment.service.name}</dd>
         <dt className="text-slate-500">Com</dt>
         <dd className="font-medium">{appointment.professional.name}</dd>
+        {appointment.attendeeName && (
+          <>
+            <dt className="text-slate-500">Para</dt>
+            <dd className="font-medium">{appointment.attendeeName}</dd>
+          </>
+        )}
         <dt className="text-slate-500">Onde</dt>
         <dd className="font-medium">{appointment.establishment.name}</dd>
       </dl>

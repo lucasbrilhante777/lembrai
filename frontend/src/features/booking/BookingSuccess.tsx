@@ -34,6 +34,12 @@ export function BookingSuccess({
         </dd>
         <dt className="text-slate-500">Com</dt>
         <dd className="font-medium">{booking.professional.name}</dd>
+        {booking.attendeeName && (
+          <>
+            <dt className="text-slate-500">Para</dt>
+            <dd className="font-medium">{booking.attendeeName}</dd>
+          </>
+        )}
         <dt className="text-slate-500">Onde</dt>
         <dd className="font-medium">{booking.establishment.name}</dd>
       </dl>

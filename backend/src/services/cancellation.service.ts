@@ -57,5 +57,6 @@ function toSummary(appointment: AppointmentWithRelations) {
     establishment: { name: appointment.establishment.name, slug: appointment.establishment.slug },
     service: { name: appointment.service.name },
     professional: { name: appointment.professional.name },
+    attendeeName: appointment.attendeeName,
   };
 }

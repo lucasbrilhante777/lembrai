@@ -63,6 +63,7 @@ export function CustomerPage() {
                         {formatLongDate(a.date)} às {a.time}
                       </p>
                       <p className="text-slate-600">
+                        {a.attendeeName && <strong className="text-slate-800">Para {a.attendeeName} · </strong>}
                         {a.service} · {a.professional} · {formatPrice(a.priceCents)}
                       </p>
                     </div>

@@ -102,8 +102,8 @@ describe("ficha do cliente", () => {
     averageTicketCents: 3250,
     nextAppointmentAt: "2026-12-01T12:00:00.000Z",
     appointments: [
-      { id: "a3", status: "NO_SHOW", startAt: "", date: "2026-10-25", time: "09:00", priceCents: 3500, service: "Corte", professional: "João" },
-      { id: "a2", status: "COMPLETED", startAt: "", date: "2026-10-20", time: "08:00", priceCents: 3000, service: "Corte", professional: "João" },
+      { id: "a3", status: "NO_SHOW", startAt: "", date: "2026-10-25", time: "09:00", priceCents: 3500, attendeeName: null, service: "Corte", professional: "João" },
+      { id: "a2", status: "COMPLETED", startAt: "", date: "2026-10-20", time: "08:00", priceCents: 3000, attendeeName: null, service: "Corte", professional: "João" },
     ],
   };
 

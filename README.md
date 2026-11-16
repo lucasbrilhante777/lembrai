@@ -92,6 +92,7 @@ O **profissional** (ex.: o barbeiro funcionário) tem agenda própria, mas não 
 - [x] **Garantia de que dois clientes nunca pegam o mesmo horário**, mesmo agendando ao mesmo tempo
 - [x] E-mail de confirmação e **lembrete 24h antes** (envio único, mesmo com várias instâncias)
 - [x] Cancelamento pelo link do e-mail (abrir a página não cancela: só o clique)
+- [x] **Agendar para outra pessoa:** se o mesmo e-mail já tem um horário no período, a página pergunta se é para outra pessoa e pede só o nome dela (sem revelar qual é o outro horário)
 
 ### Dono do negócio (painel)
 - [x] Cadastro e login; o estabelecimento é criado junto (slug gerado do nome e fuso horário)

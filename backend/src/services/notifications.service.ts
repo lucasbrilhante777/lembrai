@@ -41,6 +41,7 @@ async function loadEmailData(appointmentId: string): Promise<AppointmentEmailDat
     timezone: appointment.establishment.timezone,
     priceCents: appointment.priceCentsAtBooking,
     cancelUrl: cancelUrl(appointment.cancelToken),
+    attendeeName: appointment.attendeeName,
     bookingUrl: `${env.FRONTEND_URL}/agenda/${appointment.establishment.slug}`,
   };
 }

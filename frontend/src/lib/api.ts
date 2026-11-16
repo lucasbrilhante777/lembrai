@@ -6,12 +6,15 @@ export type FieldIssue = { path: string; message: string };
 export class ApiError extends Error {
   readonly status: number;
   readonly issues: FieldIssue[];
+  /** Código do erro, quando a API manda um (ex.: "SLOT_TAKEN"): diferencia erros com o mesmo status. */
+  readonly code: string | undefined;
 
-  constructor(message: string, status: number, issues: FieldIssue[] = []) {
+  constructor(message: string, status: number, issues: FieldIssue[] = [], code?: string) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.issues = issues;
+    this.code = code;
   }
 }
 
@@ -32,7 +35,7 @@ export async function api<T>(path: string, init: { method?: string; body?: unkno
 
   const data = await response.json().catch(() => undefined);
   if (!response.ok) {
-    throw new ApiError(data?.message ?? "Algo deu errado. Tente novamente.", response.status, data?.issues ?? []);
+    throw new ApiError(data?.message ?? "Algo deu errado. Tente novamente.", response.status, data?.issues ?? [], data?.code);
   }
   // 200 sem JSON = não foi a nossa API que respondeu (ex.: proxy fora do ar devolvendo o HTML do site).
   // Melhor falhar alto do que seguir com `undefined` fingindo que deu certo.

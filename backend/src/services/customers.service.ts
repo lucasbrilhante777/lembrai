@@ -64,6 +64,7 @@ export async function getCustomer(establishmentId: string, customerId: string, n
       date: localDateOf(a.startAt, timezone),
       time: formatLocalTime(a.startAt, timezone),
       priceCents: a.priceCentsAtBooking,
+      attendeeName: a.attendeeName,
       service: a.service.name,
       professional: a.professional.name,
     })),

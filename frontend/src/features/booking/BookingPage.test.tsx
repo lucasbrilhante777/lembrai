@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { describe, expect, it, vi } from "vitest";
@@ -131,7 +131,9 @@ describe("BookingPage", () => {
   });
 
   it("se o horário for ocupado (409), avisa, desmarca o horário e guarda os dados digitados", async () => {
-    mockApi({ post: { status: 409, body: { message: "Esse horário acabou de ser ocupado. Escolha outro." } } });
+    mockApi({
+      post: { status: 409, body: { message: "Esse horário acabou de ser ocupado. Escolha outro.", code: "SLOT_TAKEN" } },
+    });
     const user = userEvent.setup();
     renderPage();
 
@@ -164,6 +166,73 @@ describe("BookingPage", () => {
 
     expect(await screen.findByText("E-mail inválido.")).toBeInTheDocument();
     expect(screen.getByLabelText("E-mail")).toHaveAttribute("aria-invalid", "true");
+  });
+
+  it("mesmo e-mail com horário no período: pergunta se é para outra pessoa e envia o nome", async () => {
+    const conflict = { status: 409, body: { message: "Esse e-mail já tem um horário marcado nesse período. Esse novo agendamento é para outra pessoa?", code: "CUSTOMER_TIME_CONFLICT" } };
+    let calls = 0;
+    const fetchMock = mockApi({});
+    // 1º POST: conflito; 2º POST (com o nome): agendado
+    fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
+      if (init?.method === "POST") {
+        calls++;
+        const reply = calls === 1 ? conflict : { status: 201, body: { ...booking, attendeeName: "Pedrinho" } };
+        return new Response(JSON.stringify(reply.body), { status: reply.status });
+      }
+      const body = url.includes("/availability") ? availability : establishment;
+      return new Response(JSON.stringify(body), { status: 200 });
+    });
+    const user = userEvent.setup();
+    renderPage();
+
+    await chooseSlot(user);
+    await fillCustomer(user);
+    await user.click(screen.getByRole("button", { name: "Confirmar agendamento" }));
+
+    // Pergunta, sem desmarcar o horário
+    const dialog = await screen.findByRole("alertdialog", { name: "Horário no mesmo período" });
+    expect(screen.getByRole("button", { name: "09:00" })).toHaveAttribute("aria-pressed", "true");
+    await user.click(within(dialog).getByRole("button", { name: "Sim, é para outra pessoa" }));
+
+    await user.type(screen.getByLabelText("Nome de quem vai ser atendido"), "Pedrinho");
+    await user.click(screen.getByRole("button", { name: "Confirmar agendamento" }));
+
+    expect(await screen.findByRole("heading", { name: "Agendamento confirmado!" })).toBeInTheDocument();
+    expect(screen.getByText("Pedrinho")).toBeInTheDocument();
+    const posts = fetchMock.mock.calls.filter(([, init]) => init?.method === "POST");
+    expect(JSON.parse(posts[0]![1]!.body as string)).not.toHaveProperty("attendeeName");
+    expect(JSON.parse(posts[1]![1]!.body as string)).toMatchObject({ attendeeName: "Pedrinho" });
+  });
+
+  it("mesmo e-mail com horário no período: 'não' volta para a escolha do horário", async () => {
+    mockApi({
+      post: { status: 409, body: { message: "Esse e-mail já tem um horário marcado nesse período. Esse novo agendamento é para outra pessoa?", code: "CUSTOMER_TIME_CONFLICT" } },
+    });
+    const user = userEvent.setup();
+    renderPage();
+
+    await chooseSlot(user);
+    await fillCustomer(user);
+    await user.click(screen.getByRole("button", { name: "Confirmar agendamento" }));
+    await user.click(await screen.findByRole("button", { name: "Não, vou escolher outro horário" }));
+
+    expect(screen.queryByLabelText("Seu nome")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "09:00" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("limite de agendamentos: mostra o aviso e mantém o horário escolhido", async () => {
+    mockApi({
+      post: { status: 409, body: { message: "Você já tem 3 agendamentos marcados neste estabelecimento. Cancele um para marcar outro.", code: "TOO_MANY_APPOINTMENTS" } },
+    });
+    const user = userEvent.setup();
+    renderPage();
+
+    await chooseSlot(user);
+    await fillCustomer(user);
+    await user.click(screen.getByRole("button", { name: "Confirmar agendamento" }));
+
+    expect(await screen.findByText(/Cancele um para marcar outro/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "09:00" })).toHaveAttribute("aria-pressed", "true");
   });
 
   it("avisa quando o estabelecimento não existe", async () => {
