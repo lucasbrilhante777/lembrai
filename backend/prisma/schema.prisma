@@ -145,6 +145,9 @@ model Appointment {
   /// Sempre em UTC (ver ADR 0002)
   startAt             DateTime          @db.Timestamptz(3)
   endAt               DateTime          @db.Timestamptz(3)
+  /// Para quem é o atendimento, quando não é para quem agendou (ex.: o pai marca para o filho).
+  /// null = para o próprio cliente. O contato (e-mail, lembrete) continua sendo quem agendou.
+  attendeeName        String?
   /// Preço no momento do agendamento: mudar o preço do serviço não altera o histórico.
   priceCentsAtBooking Int
   status              AppointmentStatus @default(SCHEDULED)

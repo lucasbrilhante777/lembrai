@@ -152,6 +152,18 @@ Configurada no GitHub: só entra código por PR, com o CI verde, e nem o dono do
 
 **Por que 404 e não 403 para dados de outro dono?** O 403 diria "isso existe, mas não é seu", o que já é informação. O 404 não confirma nem que existe.
 
+**Mesmo status, situações diferentes: códigos de erro.** A criação de agendamento tem três 409, e cada um pede uma reação diferente na tela. Por isso a resposta traz um `code` além da mensagem:
+
+| `code` | Situação | O que a tela faz |
+|---|---|---|
+| `SLOT_TAKEN` | O horário foi ocupado enquanto o cliente preenchia | Desmarca o horário e recarrega a lista |
+| `CUSTOMER_TIME_CONFLICT` | Esse e-mail já tem horário nesse período | Pergunta se é para outra pessoa (e pede o nome) |
+| `TOO_MANY_APPOINTMENTS` | Limite de agendamentos futuros por e-mail | Mostra o aviso e mantém o horário |
+
+Antes dos códigos, a tela tratava **todo** 409 como "horário ocupado", e o aviso de limite desmarcava o horário à toa. O front decidir pela **mensagem** seria frágil: qualquer mudança de texto quebraria a lógica.
+
+**Vazamento de informação em página pública.** Quando o e-mail já tem um horário no período, a mensagem é genérica ("esse e-mail já tem um horário marcado nesse período"). Ela nunca diz "Corte com o João às 14:00": senão, qualquer pessoa descobriria a agenda de outra só digitando o e-mail dela. Mesmo genérica, a mensagem confirma que *existe* um horário. Esse vazamento mínimo foi aceito e documentado, e há teste garantindo que a mensagem não cita profissional, serviço nem horário.
+
 **Por que o `GET` nunca altera nada?** Leitores de e-mail e antivírus abrem links sozinhos. Se `GET /cancelar/...` cancelasse, o agendamento sumiria sem o cliente clicar. Por isso o link mostra a página, e quem cancela é um `POST` ([cancellation.service.ts](../backend/src/services/cancellation.service.ts)).
 
 🎤 **Em entrevista:** "Uso os status certos para cada caso: 409 quando o horário foi ocupado, 404 em vez de 403 para não revelar que um recurso de outro cliente existe, e GET nunca altera estado, o que importou no link de cancelamento do e-mail."
@@ -249,6 +261,8 @@ Arquivo: [schema.prisma](../backend/prisma/schema.prisma).
 - `EXCLUDE`: dois agendamentos do mesmo profissional não podem se sobrepor (ver seção 9).
 
 **Migration** é um arquivo SQL versionado que leva o banco de um estado para o próximo. Fica no Git e roda igual em todo ambiente (sua máquina, CI e produção).
+
+**Migration segura:** a coluna `attendeeName` ("para quem é", quando um pai agenda para o filho) entrou como **opcional** (`NULL`). Os agendamentos antigos ficam com ela vazia ("para o próprio cliente") e nada precisa ser reescrito. Uma coluna obrigatória exigiria um valor padrão para as linhas existentes. Também foi uma escolha de modelagem: em vez de criar um cliente sem e-mail para o dependente (o que quebraria a regra "um cliente por e-mail"), o nome fica no agendamento, e o contato continua sendo quem agendou. Pela **LGPD (minimização)**, só se pede o nome, e não o telefone de um terceiro que nunca seria usado.
 
 🎤 **Em entrevista:** "Dinheiro em centavos, preço copiado para o agendamento para preservar o histórico, desativação em vez de exclusão, e regras críticas como constraints no banco, que é a última linha de defesa."
 
@@ -579,6 +593,9 @@ Tente responder sozinho antes de olhar a seção indicada.
 46. Qual o bug de um filtro `contains` com texto vazio? *(16)*
 47. O que é debounce e por que a busca usa? *(16)*
 48. O que é estado derivado e quando ele é melhor que um useEffect? *(16)*
+49. Por que a API manda um `code` além do status 409? *(3)*
+50. Que informação a página pública poderia vazar no "agendar para outra pessoa", e como foi evitado? *(3)*
+51. Por que o "para quem é" virou uma coluna opcional no agendamento, e não um cliente novo? *(8)*
 
 ---
 
@@ -632,5 +649,6 @@ Tente responder sozinho antes de olhar a seção indicada.
 | **União discriminada** | Tipo com várias formas, escolhidas por um campo (ex.: `kind: "days" | "hours"`) |
 | **UTC / IANA** | Horário universal / nome padrão de fuso (`America/Recife`) |
 | **Variável de ambiente** | Configuração passada para o programa de fora do código (`DATABASE_URL`), diferente em cada ambiente |
+| **Vazamento de informação** | Quando uma resposta revela algo que quem pergunta não deveria saber (ex.: a agenda de outra pessoa) |
 | **X-Forwarded-For** | Cabeçalho em que os proxies anotam o IP de quem fez a requisição |
 | **XSS** | Script malicioso rodando na página ou no e-mail |

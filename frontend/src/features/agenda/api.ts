@@ -15,6 +15,8 @@ export type Appointment = {
   time: string;
   endTime: string;
   priceCents: number;
+  /** Para quem é, quando não é para quem agendou. */
+  attendeeName: string | null;
   customer: { id: string; name: string; email: string; phone: string };
   service: { id: string; name: string };
   professional: { id: string; name: string };

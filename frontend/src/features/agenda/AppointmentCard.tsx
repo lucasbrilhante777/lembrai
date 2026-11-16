@@ -35,6 +35,7 @@ export function AppointmentCard({ appointment, now, busy, onChangeStatus }: Prop
             </Link>
           </p>
           <p className="text-sm text-slate-600">
+            {appointment.attendeeName && <strong className="text-slate-800">Para {appointment.attendeeName} · </strong>}
             {appointment.service.name} · {appointment.professional.name} · {formatPrice(appointment.priceCents)}
           </p>
           <p className="mt-1 text-sm">

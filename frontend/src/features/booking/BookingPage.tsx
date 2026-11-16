@@ -1,5 +1,6 @@
 import { type ReactNode, useMemo, useState } from "react";
 import { useParams } from "react-router";
+import { TextField } from "../../components/form.tsx";
 import { Alert, Card, OptionButton, Spinner, Step } from "../../components/ui.tsx";
 import { ApiError } from "../../lib/api.ts";
 import { addDays, formatDayChip, formatDuration, formatLongDate, formatPrice, localToday } from "../../lib/format.ts";
@@ -29,6 +30,9 @@ export function BookingPage() {
   const [slot, setSlot] = useState<Slot | null>(null);
   const [customer, setCustomer] = useState<CustomerInput>({ name: "", email: "", phone: "" });
   const [consent, setConsent] = useState(false);
+  // "Para outra pessoa": só entra em cena quando a API avisa que esse e-mail já tem horário nesse período.
+  const [forSomeoneElse, setForSomeoneElse] = useState(false);
+  const [attendeeName, setAttendeeName] = useState("");
   const [booking, setBooking] = useState<{ result: BookingResult; email: string } | null>(null);
 
   const availability = useAvailability(
@@ -74,6 +78,8 @@ export function BookingPage() {
           onNewBooking={() => {
             setBooking(null);
             setSlot(null);
+            setForSomeoneElse(false);
+            setAttendeeName("");
             createAppointment.reset();
           }}
         />
@@ -83,17 +89,28 @@ export function BookingPage() {
 
   const selectedService = data.services.find((s) => s.id === serviceId);
   const apiError = createAppointment.error instanceof ApiError ? createAppointment.error : null;
-  // 409 = o horário foi ocupado por outra pessoa enquanto o cliente preenchia os dados.
-  const conflictMessage = apiError?.status === 409 ? apiError.message : null;
+  // Cada 409 tem um código (ver BOOKING_ERRORS no backend) e uma reação diferente na tela:
+  // SLOT_TAKEN = o horário foi ocupado enquanto o cliente preenchia -> escolher outro horário.
+  const conflictMessage = apiError?.code === "SLOT_TAKEN" ? apiError.message : null;
+  // CUSTOMER_TIME_CONFLICT = esse e-mail já tem horário nesse período -> perguntar se é para outra pessoa.
+  const askForSomeoneElse = apiError?.code === "CUSTOMER_TIME_CONFLICT" && !forSomeoneElse;
+  const otherError = apiError && !conflictMessage && apiError.code !== "CUSTOMER_TIME_CONFLICT" && apiError.issues.length === 0;
 
   function submit() {
     createAppointment.mutate(
-      { serviceId: serviceId!, professionalId: professionalId!, startAt: slot!.startAt, customer, consent },
+      {
+        serviceId: serviceId!,
+        professionalId: professionalId!,
+        startAt: slot!.startAt,
+        customer,
+        consent,
+        ...(forSomeoneElse ? { attendeeName } : {}),
+      },
       {
         onSuccess: (result) => setBooking({ result, email: customer.email.trim().toLowerCase() }),
         onError: (error) => {
           // Desmarca o horário perdido; a lista de horários é recarregada (ver useCreateAppointment).
-          if (error instanceof ApiError && error.status === 409) setSlot(null);
+          if (error instanceof ApiError && error.code === "SLOT_TAKEN") setSlot(null);
         },
       },
     );
@@ -221,7 +238,58 @@ export function BookingPage() {
             </p>
 
             {/* Outros erros sem campo específico (ex.: limite de agendamentos, falha de conexão). */}
-            {apiError && apiError.status !== 409 && apiError.issues.length === 0 && <Alert>{apiError.message}</Alert>}
+            {otherError && <Alert>{apiError.message}</Alert>}
+
+            {askForSomeoneElse && (
+              <div role="alertdialog" aria-label="Horário no mesmo período" className="space-y-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                <p>{apiError.message}</p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForSomeoneElse(true);
+                      createAppointment.reset();
+                    }}
+                    className="rounded-lg bg-amber-600 px-3 py-1.5 font-medium text-white hover:bg-amber-700"
+                  >
+                    Sim, é para outra pessoa
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSlot(null);
+                      createAppointment.reset();
+                    }}
+                    className="rounded-lg px-3 py-1.5 font-medium text-amber-900 hover:bg-amber-100"
+                  >
+                    Não, vou escolher outro horário
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {forSomeoneElse && (
+              <div className="space-y-1">
+                <TextField
+                  label="Nome de quem vai ser atendido"
+                  name="attendeeName"
+                  hint="O contato (e-mail e lembrete) continua sendo você."
+                  value={attendeeName}
+                  onChange={setAttendeeName}
+                  error={apiError?.issues.find((i) => i.path === "attendeeName")?.message}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setForSomeoneElse(false);
+                    setAttendeeName("");
+                  }}
+                  className="text-xs font-medium text-teal-700 hover:underline"
+                >
+                  Não é para outra pessoa
+                </button>
+              </div>
+            )}
 
             <CustomerForm
               customer={customer}

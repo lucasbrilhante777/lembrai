@@ -16,6 +16,8 @@ export type AppointmentEmailData = {
   timezone: string;
   priceCents: number;
   cancelUrl: string;
+  /** Para quem é, quando não é para quem agendou (null = para o próprio cliente). */
+  attendeeName: string | null;
   /** Página pública do estabelecimento, para marcar de novo. */
   bookingUrl: string;
 };
@@ -113,14 +115,19 @@ export function escapeHtml(value: string) {
     .replaceAll("'", "&#39;");
 }
 
-function detailsHtml(data: AppointmentEmailData, when: string) {
-  const rows: [string, string][] = [
+/** As linhas de detalhe, uma vez só para o HTML e para o texto. "Para" só aparece quando é para outra pessoa. */
+function detailRows(data: AppointmentEmailData, when: string): [string, string][] {
+  return [
     ["Quando", when],
     ["Onde", data.establishmentName],
     ["Serviço", `${data.serviceName} (${formatPrice(data.priceCents)})`],
     ["Com", data.professionalName],
+    ...(data.attendeeName ? [["Para", data.attendeeName] as [string, string]] : []),
   ];
-  return `<table style="border-collapse:collapse;margin:16px 0">${rows
+}
+
+function detailsHtml(data: AppointmentEmailData, when: string) {
+  return `<table style="border-collapse:collapse;margin:16px 0">${detailRows(data, when)
     .map(
       ([label, value]) =>
         `<tr><td style="padding:4px 16px 4px 0;color:#666">${label}</td><td style="padding:4px 0"><strong>${escapeHtml(value)}</strong></td></tr>`,
@@ -129,12 +136,9 @@ function detailsHtml(data: AppointmentEmailData, when: string) {
 }
 
 function detailsText(data: AppointmentEmailData, when: string) {
-  return [
-    `Quando: ${when}`,
-    `Onde: ${data.establishmentName}`,
-    `Serviço: ${data.serviceName} (${formatPrice(data.priceCents)})`,
-    `Com: ${data.professionalName}`,
-  ].join("\n");
+  return detailRows(data, when)
+    .map(([label, value]) => `${label}: ${value}`)
+    .join("\n");
 }
 
 function cancelHtml(cancelUrl: string) {

@@ -22,6 +22,8 @@ export const createAppointmentSchema = z.object({
     email: z.string().trim().toLowerCase().pipe(z.email("E-mail inválido.")),
     phone,
   }),
+  // Para quem é, quando não é para quem agendou (só o nome: o contato continua sendo quem agendou).
+  attendeeName: z.string().trim().min(2, "Informe o nome de quem vai ser atendido.").max(80).optional(),
   // LGPD: o cliente precisa concordar com o uso dos dados para o agendamento e o lembrete.
   consent: z.literal(true, "É preciso concordar com o uso dos dados para agendar."),
 });

@@ -12,7 +12,8 @@ export const notFoundHandler: RequestHandler = (_req, res) => {
 // handlers async chegam aqui automaticamente, sem precisar de try/catch em cada rota.
 export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   if (err instanceof AppError) {
-    res.status(err.statusCode).json({ message: err.message });
+    // code só aparece quando existe (JSON.stringify ignora undefined).
+    res.status(err.statusCode).json({ message: err.message, code: err.code });
     return;
   }
 

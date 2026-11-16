@@ -88,6 +88,7 @@ function toDto(row: AppointmentRow, timezone: string) {
     time: formatLocalTime(row.startAt, timezone),
     endTime: formatLocalTime(row.endAt, timezone),
     priceCents: row.priceCentsAtBooking,
+    attendeeName: row.attendeeName, // para quem é, quando não é para quem agendou
     customer: row.customer,
     service: row.service,
     professional: row.professional,

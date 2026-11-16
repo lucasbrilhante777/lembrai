@@ -21,6 +21,18 @@ import {
 /** Até quantos dias à frente o cliente pode agendar. */
 export const MAX_DAYS_AHEAD = 60;
 
+/**
+ * Códigos dos 409 da criação de agendamento: o front reage diferente a cada um.
+ * - SLOT_TAKEN: o horário não está mais livre -> escolher outro horário
+ * - CUSTOMER_TIME_CONFLICT: esse e-mail já tem horário nesse período -> perguntar se é para outra pessoa
+ * - TOO_MANY_APPOINTMENTS: limite de agendamentos futuros por e-mail
+ */
+export const BOOKING_ERRORS = {
+  SLOT_TAKEN: "SLOT_TAKEN",
+  CUSTOMER_TIME_CONFLICT: "CUSTOMER_TIME_CONFLICT",
+  TOO_MANY_APPOINTMENTS: "TOO_MANY_APPOINTMENTS",
+} as const;
+
 /** Quantos agendamentos futuros um mesmo e-mail pode ter ao mesmo tempo (freia quem tenta lotar a agenda). */
 export const MAX_ACTIVE_APPOINTMENTS_PER_CUSTOMER = 3;
 
@@ -89,7 +101,7 @@ export async function createAppointment(slug: string, input: CreateAppointmentIn
   // da tela (expediente, duração, grade de 15 min, horário passado, conflito).
   const slots = await listFreeSlots(timezone, date, { service, professional, workingHours }, now);
   const slot = slots.find((s) => s.startAt.getTime() === startAt.getTime());
-  if (!slot) throw new AppError("Esse horário não está disponível. Escolha outro.", 409);
+  if (!slot) throw new AppError("Esse horário não está disponível. Escolha outro.", 409, BOOKING_ERRORS.SLOT_TAKEN);
 
   // Cliente não tem login: é identificado pelo e-mail dentro do estabelecimento.
   // Se já existe, NÃO sobrescrevemos nome/telefone: quem digita um e-mail alheio não altera o cadastro de outra pessoa.
@@ -99,6 +111,28 @@ export async function createAppointment(slug: string, input: CreateAppointmentIn
     update: {},
   });
 
+  // O mesmo e-mail já tem um horário que se cruza com este? Pode ser engano, ou pode ser para outra pessoa
+  // (ex.: pai e filho ao mesmo tempo, com profissionais diferentes). Sem attendeeName, perguntamos.
+  // A mensagem é GENÉRICA de propósito: a página é pública, e dizer "você tem Corte com o João às 14:00"
+  // deixaria qualquer um descobrir a agenda de outra pessoa digitando o e-mail dela.
+  if (!input.attendeeName) {
+    const overlapping = await prisma.appointment.count({
+      where: {
+        customerId: customer.id,
+        status: { not: "CANCELED" },
+        startAt: { lt: slot.endAt },
+        endAt: { gt: slot.startAt },
+      },
+    });
+    if (overlapping > 0) {
+      throw new AppError(
+        "Esse e-mail já tem um horário marcado nesse período. Esse novo agendamento é para outra pessoa?",
+        409,
+        BOOKING_ERRORS.CUSTOMER_TIME_CONFLICT,
+      );
+    }
+  }
+
   const activeCount = await prisma.appointment.count({
     where: { customerId: customer.id, status: "SCHEDULED", startAt: { gt: now } },
   });
@@ -106,6 +140,7 @@ export async function createAppointment(slug: string, input: CreateAppointmentIn
     throw new AppError(
       `Você já tem ${MAX_ACTIVE_APPOINTMENTS_PER_CUSTOMER} agendamentos marcados neste estabelecimento. Cancele um para marcar outro.`,
       409,
+      BOOKING_ERRORS.TOO_MANY_APPOINTMENTS,
     );
   }
 
@@ -117,6 +152,7 @@ export async function createAppointment(slug: string, input: CreateAppointmentIn
         professionalId: professional.id,
         serviceId: service.id,
         customerId: customer.id,
+        attendeeName: input.attendeeName ?? null,
         startAt: slot.startAt,
         endAt: slot.endAt,
         priceCentsAtBooking: service.priceCents, // cópia do preço de agora (ver README, modelo de dados)
@@ -127,7 +163,7 @@ export async function createAppointment(slug: string, input: CreateAppointmentIn
     // Outra pessoa pegou o mesmo horário entre a nossa checagem e o INSERT.
     // A constraint do banco barrou (ADR 0001); aqui só traduzimos para uma resposta amigável.
     if (isAppointmentOverlapError(err)) {
-      throw new AppError("Esse horário acabou de ser ocupado. Escolha outro.", 409);
+      throw new AppError("Esse horário acabou de ser ocupado. Escolha outro.", 409, BOOKING_ERRORS.SLOT_TAKEN);
     }
     throw err;
   }
@@ -149,6 +185,7 @@ export async function createAppointment(slug: string, input: CreateAppointmentIn
     establishment: { name: establishment.name },
     service: { name: service.name, durationMinutes: service.durationMinutes },
     professional: { name: professional.name },
+    attendeeName: appointment.attendeeName,
     priceCents: appointment.priceCentsAtBooking,
   };
 }

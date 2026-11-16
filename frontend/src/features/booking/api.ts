@@ -27,6 +27,7 @@ export type BookingResult = {
   service: { name: string; durationMinutes: number };
   professional: { name: string };
   priceCents: number;
+  attendeeName: string | null;
 };
 
 export function useEstablishment(slug: string) {
@@ -57,6 +58,7 @@ export function useCreateAppointment(slug: string) {
       startAt: string;
       customer: CustomerInput;
       consent: boolean;
+      attendeeName?: string;
     }) => api<BookingResult>(`/public/establishments/${slug}/appointments`, { method: "POST", body }),
     // Deu certo ou deu conflito: em ambos os casos os horários livres mudaram, então buscamos de novo.
     onSettled: () => queryClient.invalidateQueries({ queryKey: ["availability", slug] }),
