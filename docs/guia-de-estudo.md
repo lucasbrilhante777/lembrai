@@ -223,6 +223,33 @@ Cada pasta do backend tem uma responsabilidade:
 
 🎤 **Em entrevista:** "A senha é guardada com bcrypt. O login gera um JWT, que fica num cookie httpOnly com SameSite=Lax: o JavaScript não lê o token e outros sites não conseguem usá-lo. O login devolve a mesma mensagem e demora o mesmo tempo para e-mail inexistente e senha errada, para não revelar quem tem conta, e tem rate limit."
 
+### Recuperar senha ("esqueci minha senha")
+
+Pergunta clássica de entrevista: "como você faria um reset de senha seguro?". O fluxo:
+
+1. A pessoa informa o e-mail em `/esqueci-senha` → `POST /auth/forgot-password`.
+2. Se a conta existe, a API gera um **token aleatório** (32 bytes), salva **só o hash** dele com validade de 1 hora e manda por e-mail o link `/redefinir-senha/<token>`.
+3. A pessoa abre o link, digita a senha nova → `POST /auth/reset-password` com token + senha.
+4. A API confere o token, troca a senha, marca o token como usado e **derruba as sessões antigas**.
+
+| Decisão | Por quê | Onde |
+|---|---|---|
+| **Resposta igual** exista a conta ou não (sempre `202` com a mesma frase) | Senão, a tela vira um jeito de descobrir quem tem conta (*enumeração de usuários*) | [password-reset.service.ts](../backend/src/services/password-reset.service.ts) |
+| **E-mail enviado sem `await`** | Esperar o SMTP faria a resposta demorar mais quando a conta existe: o **tempo** entregaria o segredo (timing attack) | idem |
+| **Banco guarda o SHA-256 do token**, não o token | Quem ler o banco (backup vazado, SQL injection) não consegue usar os links | coluna `tokenHash` |
+| **SHA-256, não bcrypt** | bcrypt é lento de propósito para proteger senhas *fracas*. O token tem 256 bits aleatórios: impossível de adivinhar, então um hash rápido basta | idem |
+| **Validade curta (1 h) e uso único** | Um link esquecido no e-mail não vira uma porta aberta para sempre | `expiresAt`, `usedAt` |
+| **"Gastar" o token com `UPDATE ... WHERE usedAt IS NULL`** | Duas requisições juntas com o mesmo link: só uma consegue marcar `usedAt` (a outra vê `count = 0`). Mesma ideia do lembrete idempotente | [seção 11](#11-jobs-agendados-e-idempotência) |
+| **Pedir de novo invalida o link anterior** | Só o mais recente vale; menos links válidos circulando | `deleteMany` antes do `create` |
+| **Derrubar sessões antigas** (`sessionVersion`) | Muita gente troca a senha porque alguém a descobriu. Se a sessão do invasor continuasse valendo, a troca não adiantaria | [ensure-authenticated.ts](../backend/src/middlewares/ensure-authenticated.ts) |
+| **Página só troca no clique (POST)** | Leitores de e-mail abrem links sozinhos para checar segurança; um GET não pode gastar o token | [ResetPasswordPage.tsx](../frontend/src/features/auth/ResetPasswordPage.tsx) |
+
+**O problema do JWT "irrevogável".** Um JWT vale até expirar: a API só confere a assinatura, não pergunta nada ao banco. Isso ajuda a escalar sem estado, mas não dá para "deslogar" alguém à força. A solução usada aqui é a **versão da sessão**: o usuário tem `sessionVersion` no banco, o token carrega o número de quando foi emitido, e o middleware compara os dois. Trocar a senha soma 1, e todo token antigo passa a ser recusado.
+- **Custo:** uma consulta por chave primária a cada requisição do painel (barata).
+- **Alternativas que valem citar:** lista de tokens revogados (*denylist*), ou access token curto (15 min) + refresh token guardado no banco.
+
+🎤 **Em entrevista:** "No reset de senha, a resposta é igual exista o e-mail ou não, e o e-mail sai sem a rota esperar, para nem o tempo de resposta revelar quem tem conta. O token é aleatório, vale 1 hora e uma vez só, e no banco fica só o hash dele. Para garantir o uso único mesmo com duas requisições simultâneas, eu gasto o token com um UPDATE condicional. E, como JWT não dá para revogar, coloquei uma versão de sessão no token: trocar a senha incrementa a versão e derruba as sessões antigas."
+
 ---
 
 ## 7. Multi-tenant e IDOR
@@ -596,6 +623,10 @@ Tente responder sozinho antes de olhar a seção indicada.
 49. Por que a API manda um `code` além do status 409? *(3)*
 50. Que informação a página pública poderia vazar no "agendar para outra pessoa", e como foi evitado? *(3)*
 51. Por que o "para quem é" virou uma coluna opcional no agendamento, e não um cliente novo? *(8)*
+52. Por que o "esqueci minha senha" responde igual exista a conta ou não, e por que o e-mail sai sem `await`? *(6)*
+53. Por que guardar o hash do token de reset, e por que SHA-256 serve aqui se para senha usamos bcrypt? *(6)*
+54. Como garantir que o link de reset seja usado uma vez só, mesmo com dois cliques simultâneos? *(6)*
+55. JWT não dá para revogar. Como o Lembrai derruba as sessões antigas depois da troca de senha, e qual o custo disso? *(6)*
 
 ---
 
@@ -622,6 +653,7 @@ Tente responder sozinho antes de olhar a seção indicada.
 | **Health check** | Rota simples (`/health`) que diz se o serviço está de pé |
 | **IaC** | Infraestrutura como código: a configuração do servidor fica num arquivo versionado (`render.yaml`) |
 | **GROUP BY** | Comando SQL que agrupa linhas para calcular totais (SUM, COUNT) por grupo |
+| **Enumeração de usuários** | Descobrir quais e-mails têm conta pelas respostas (ou pelo tempo delas) do login, cadastro ou reset |
 | **Hash** | "Resumo" irreversível de um dado |
 | **Idempotente** | Rodar várias vezes dá o mesmo resultado que rodar uma |
 | **IDOR** | Acessar dados de outro cliente trocando um id |

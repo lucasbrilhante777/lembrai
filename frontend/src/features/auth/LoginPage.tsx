@@ -40,6 +40,11 @@ export function LoginPage() {
             value={password}
             onChange={setPassword}
           />
+          <p className="-mt-2 text-right text-sm">
+            <Link to="/esqueci-senha" className="text-teal-700 hover:underline">
+              Esqueci minha senha
+            </Link>
+          </p>
           <PrimaryButton type="submit" disabled={login.isPending}>
             {login.isPending ? "Entrando..." : "Entrar"}
           </PrimaryButton>

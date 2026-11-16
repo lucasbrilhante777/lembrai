@@ -56,6 +56,23 @@ export function useRegister() {
   });
 }
 
+/** Pede o link de redefinição. A API responde igual exista a conta ou não. */
+export function useForgotPassword() {
+  return useMutation({
+    mutationFn: (body: { email: string }) => api<{ message: string }>("/auth/forgot-password", { method: "POST", body }),
+  });
+}
+
+export function useResetPassword() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { token: string; password: string }) =>
+      api<void>("/auth/reset-password", { method: "POST", body }),
+    // A API derruba as sessões antigas e apaga o cookie: aqui ninguém fica logado.
+    onSuccess: () => queryClient.setQueryData(SESSION_KEY, null),
+  });
+}
+
 export function useLogout() {
   const queryClient = useQueryClient();
   return useMutation({
