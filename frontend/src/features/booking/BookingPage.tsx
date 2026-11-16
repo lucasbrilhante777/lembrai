@@ -120,7 +120,7 @@ export function BookingPage() {
                   key={service.id}
                   selected={service.id === serviceId}
                   onClick={() => chooseService(service.id)}
-                  className="flex items-center justify-between gap-3 px-4 py-3"
+                  className="flex items-center justify-between gap-3 px-4 py-3 text-left"
                 >
                   <span>
                     <span className="block font-medium text-slate-900">{service.name}</span>

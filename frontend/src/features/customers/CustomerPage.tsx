@@ -1,7 +1,7 @@
 import { Link, useParams } from "react-router";
 import { Alert, Card, Spinner } from "../../components/ui.tsx";
 import { ApiError } from "../../lib/api.ts";
-import { formatInstantDate, formatLongDate, formatPhone, formatPrice } from "../../lib/format.ts";
+import { formatInstantDate, formatInstantDateTime, formatLongDate, formatPhone, formatPrice } from "../../lib/format.ts";
 import { STATUS_LABEL, STATUS_STYLE } from "../agenda/status.ts";
 import { useAuthenticatedSession } from "../auth/api.ts";
 import { useCustomer } from "./api.ts";
@@ -47,7 +47,7 @@ export function CustomerPage() {
           </dl>
 
           {customer.data.nextAppointmentAt && (
-            <Alert tone="info">Próximo horário marcado: {formatInstantDate(customer.data.nextAppointmentAt, timezone)}.</Alert>
+            <Alert tone="info">Próximo horário marcado: {formatInstantDateTime(customer.data.nextAppointmentAt, timezone)}.</Alert>
           )}
 
           <Card>

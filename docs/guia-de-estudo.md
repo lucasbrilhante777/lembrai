@@ -427,6 +427,8 @@ Telas **Clientes** e **ficha do cliente** ([customers.service.ts](../backend/src
 - **Função impura na renderização**: `new Date()` direto no componente dá um valor diferente a cada render. O `useNow()` ([use-now.ts](../frontend/src/lib/use-now.ts)) guarda o "agora" em estado e atualiza a cada minuto. Bônus: os botões da agenda mudam sozinhos quando chega a hora do atendimento.
 - **Dinheiro digitado**: o dono digita "35,00", e a API guarda `3500` ([money.ts](../frontend/src/lib/money.ts)). `19,99 × 100` em ponto flutuante dá `1998,9999…`, por isso o `Math.round`. É uma pergunta clássica: "por que não usar float para dinheiro?"
 - **Validar no front é conforto, no back é segurança**: o editor de horários avisa antes de enviar, e a API valida as mesmas regras de novo.
+- **Classes conflitantes no Tailwind**: com `text-left` e `text-center` no mesmo elemento, quem ganha é a **ordem das regras no CSS gerado**, não a ordem no `className`. Foi o que deixou os horários da página pública colados à esquerda, e antes disso o botão "Cancelar" verde em vez de vermelho. Solução: o componente base não impõe o que quem usa pode querer mudar (alinhamento), e variações viram **props** (`variant="danger"`).
+- **Olhe o sistema como usuário**: os dois casos acima e o dado estranho da demo (próxima seção) foram achados **tirando prints para o README**, não pelos testes.
 
 🎤 **Em entrevista:** "No front, uso React Query para o estado do servidor e um proxy para manter front e API na mesma origem, o que simplifica o cookie de login. A rota protegida é só experiência de uso; a segurança está na API. Evito asserções de não-nulo e prefiro que erros inesperados falhem alto em vez de virarem um estado vazio silencioso."
 
@@ -438,6 +440,8 @@ Telas **Clientes** e **ficha do cliente** ([customers.service.ts](../backend/src
 - **Idempotente**: recria só a conta demo e não toca nas outras.
 - **Domínio `@example.com`**: reservado pela RFC 2606 para exemplos, então nenhum e-mail chega a uma pessoa real. Os agendamentos já saem com o lembrete marcado como enviado, então o job nem tenta.
 - **Semente fixa**: dados "aleatórios", mas reproduzíveis.
+- **Dados de exemplo também precisam fazer sentido**: o gerador sorteava o cliente sem olhar a agenda dele, e a demo tinha 53 casos de cliente com dois horários ao mesmo tempo. Agora ele sorteia um cliente livre naquele horário, e um teste confere com SQL (o agendamento cruzado com ele mesmo, um *self-join*). Para provar o teste, ele foi rodado contra o gerador antigo e falhou.
+- **Regra de negócio, não bug:** a API *permite* um mesmo e-mail marcar dois horários juntos com profissionais diferentes (ex.: pai e filho). Bloquear isso é decisão de produto, não algo para "corrigir" sem perguntar.
 
 ---
 

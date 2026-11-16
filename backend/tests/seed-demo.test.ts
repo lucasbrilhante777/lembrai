@@ -77,6 +77,17 @@ describe("conta demo (seed)", () => {
     }
   });
 
+  it("nenhum cliente fictício tem dois horários ao mesmo tempo", async () => {
+    // Pares de agendamentos do mesmo cliente cujos horários se cruzam (o "<" no id evita contar o par duas vezes).
+    const rows = await prisma.$queryRaw<{ overlaps: bigint }[]>`
+      SELECT COUNT(*) AS overlaps
+      FROM "Appointment" a
+      JOIN "Appointment" b ON a."customerId" = b."customerId" AND a.id < b.id
+      WHERE a."startAt" < b."endAt" AND a."endAt" > b."startAt"`;
+
+    expect(Number(rows[0]?.overlaps)).toBe(0);
+  });
+
   it("o job de lembretes nunca envia e-mail para os clientes fictícios", async () => {
     const send = vi.spyOn(mailer, "send");
 

@@ -139,6 +139,23 @@ export async function seedDemo(prisma: PrismaClient, now = new Date()) {
   //    Como cada profissional só "anda para frente" no tempo, nunca há sobreposição (e a constraint do banco confere).
   const appointments = [];
 
+  // Uma pessoa não está em dois lugares ao mesmo tempo: sorteia um cliente que esteja livre nesse horário.
+  // (A API permite o mesmo e-mail marcar dois horários juntos, ex.: pai e filho; na demo isso só pareceria erro.)
+  const busyByCustomer = new Map<string, { startAt: Date; endAt: Date }[]>();
+  function pickFreeCustomer(startAt: Date, endAt: Date) {
+    const first = Math.floor(random() * customers.length);
+    for (let k = 0; k < customers.length; k++) {
+      const customer = customers[(first + k) % customers.length];
+      if (!customer) continue;
+      const busy = busyByCustomer.get(customer.id) ?? [];
+      if (busy.every((b) => endAt <= b.startAt || startAt >= b.endAt)) {
+        busyByCustomer.set(customer.id, [...busy, { startAt, endAt }]);
+        return customer;
+      }
+    }
+    return null; // todos ocupados nesse horário: deixa o horário vago
+  }
+
   for (let offset = -DAYS_BACK; offset <= DAYS_AHEAD; offset++) {
     const date = addDays(today, offset);
 
@@ -167,6 +184,12 @@ export async function seedDemo(prisma: PrismaClient, now = new Date()) {
             continue;
           }
 
+          const customer = pickFreeCustomer(startAt, endAt);
+          if (!customer) {
+            cursor += 15;
+            continue;
+          }
+
           const status = pickStatus(random, startAt, endAt, now);
           // Criado de 1 a 10 dias antes (nunca no futuro).
           const createdAt = new Date(Math.min(now.getTime(), startAt.getTime()) - (1 + Math.floor(random() * 10)) * DAY_MS);
@@ -175,7 +198,7 @@ export async function seedDemo(prisma: PrismaClient, now = new Date()) {
             establishmentId,
             professionalId: professional.id,
             serviceId: service.id,
-            customerId: pick(random, customers).id,
+            customerId: customer.id,
             startAt,
             endAt,
             priceCentsAtBooking: service.priceCents,
