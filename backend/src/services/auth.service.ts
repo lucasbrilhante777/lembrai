@@ -2,10 +2,11 @@ import { randomInt } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { AppError } from "../errors/app-error.js";
 import { prisma } from "../lib/prisma.js";
+import type { AuthPayload } from "../lib/token.js";
 import type { LoginInput, RegisterInput } from "../schemas/auth.schemas.js";
 import { slugify } from "../utils/slugify.js";
 
-const BCRYPT_ROUNDS = 10;
+export const BCRYPT_ROUNDS = 10;
 
 // Hash de uma senha qualquer, usado quando o e-mail não existe no login.
 // Assim a resposta demora o mesmo tempo nos dois casos, e ninguém descobre
@@ -34,7 +35,7 @@ export async function register(input: RegisterInput) {
     include: { establishments: true },
   });
 
-  return toSession(user);
+  return withAuth(user);
 }
 
 export async function login(input: LoginInput) {
@@ -48,7 +49,7 @@ export async function login(input: LoginInput) {
   // Mesma mensagem para "e-mail não existe" e "senha errada", de propósito.
   if (!user || !passwordMatches) throw new AppError("E-mail ou senha inválidos.", 401);
 
-  return toSession(user);
+  return withAuth(user);
 }
 
 export async function getSession(userId: string) {
@@ -72,6 +73,17 @@ async function generateUniqueSlug(name: string) {
   }
 
   throw new AppError("Não foi possível gerar um endereço para o estabelecimento. Tente outro nome.", 409);
+}
+
+// Sessão (vai para o front) + dados do JWT (vão para o cookie).
+function withAuth(user: UserWithEstablishments & { sessionVersion: number }) {
+  const session = toSession(user);
+  const auth: AuthPayload = {
+    userId: session.user.id,
+    establishmentId: session.establishment.id,
+    sessionVersion: user.sessionVersion,
+  };
+  return { session, auth };
 }
 
 type UserWithEstablishments = {

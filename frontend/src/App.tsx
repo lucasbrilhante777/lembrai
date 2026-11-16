@@ -1,7 +1,9 @@
 import { Navigate, Route, Routes } from "react-router";
 import { AgendaPage } from "./features/agenda/AgendaPage.tsx";
+import { ForgotPasswordPage } from "./features/auth/ForgotPasswordPage.tsx";
 import { LoginPage } from "./features/auth/LoginPage.tsx";
 import { RegisterPage } from "./features/auth/RegisterPage.tsx";
+import { ResetPasswordPage } from "./features/auth/ResetPasswordPage.tsx";
 import { RequireAuth } from "./features/auth/RequireAuth.tsx";
 import { BookingPage } from "./features/booking/BookingPage.tsx";
 import { CancelPage } from "./features/cancel/CancelPage.tsx";
@@ -27,6 +29,8 @@ export function App() {
       {/* Dono do negócio */}
       <Route path="/entrar" element={<LoginPage />} />
       <Route path="/cadastro" element={<RegisterPage />} />
+      <Route path="/esqueci-senha" element={<ForgotPasswordPage />} />
+      <Route path="/redefinir-senha/:token" element={<ResetPasswordPage />} />
       {/* Endereços que as pessoas digitam por hábito. `replace` troca a entrada no histórico,
           então o botão "voltar" não cai de novo no atalho. */}
       <Route path="/login" element={<Navigate to="/entrar" replace />} />

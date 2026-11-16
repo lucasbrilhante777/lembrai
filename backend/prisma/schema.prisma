@@ -22,14 +22,33 @@ enum AppointmentStatus {
 
 /// Dono do negócio. É o único tipo de usuário com login no MVP.
 model User {
-  id           String   @id @default(uuid())
-  name         String
-  email        String   @unique
-  passwordHash String
-  createdAt    DateTime @default(now()) @db.Timestamptz(3)
-  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
+  id             String   @id @default(uuid())
+  name           String
+  email          String   @unique
+  passwordHash   String
+  /// Vai dentro do JWT. Trocar a senha incrementa, e os tokens antigos deixam de valer.
+  sessionVersion Int      @default(0)
+  createdAt      DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime @updatedAt @db.Timestamptz(3)
 
-  establishments Establishment[]
+  establishments      Establishment[]
+  passwordResetTokens PasswordResetToken[]
+}
+
+/// Link de "esqueci minha senha". Guardamos só o hash do token: quem ler o banco
+/// não consegue usar o link. Vale por pouco tempo e uma vez só.
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String
+  /// SHA-256 do token que foi no e-mail
+  tokenHash String    @unique
+  expiresAt DateTime  @db.Timestamptz(3)
+  usedAt    DateTime? @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Establishment {

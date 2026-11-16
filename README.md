@@ -36,7 +36,7 @@
 - **Lembretes idempotentes.** Antes de enviar, o job "reserva" o agendamento com um `UPDATE` condicional: um e-mail só, mesmo com duas instâncias da API rodando juntas.
 - **Relatórios agregados no banco.** `GROUP BY` e SQL com `AT TIME ZONE` para agrupar por dia local, com valores parametrizados (sem SQL injection) e sem consultas N+1.
 - **Login cuidadoso.** JWT em cookie `httpOnly` + `SameSite=Lax`, a mesma mensagem e o mesmo tempo de resposta para "e-mail não existe" e "senha errada", e rate limit.
-- **Qualidade.** 160+ testes de API contra um Postgres real e ~100 testes de front simulando o usuário. O CI é obrigatório (lint, typecheck, testes e build), e o deploy é automático, só com o CI verde.
+- **Qualidade.** 180+ testes de API contra um Postgres real e ~100 testes de front simulando o usuário. O CI é obrigatório (lint, typecheck, testes e build), e o deploy é automático, só com o CI verde.
 - **Deploy pensado.** Vercel (front) repassa `/api` para o Render (API), então o cookie de login funciona sem CORS entre domínios. Banco no Neon, e infraestrutura descrita em código (`render.yaml`). → [ADR 0003](docs/adr/0003-deploy-com-proxy-na-vercel.md)
 
 ## Arquitetura
@@ -96,6 +96,7 @@ O **profissional** (ex.: o barbeiro funcionário) tem agenda própria, mas não 
 
 ### Dono do negócio (painel)
 - [x] Cadastro e login; o estabelecimento é criado junto (slug gerado do nome e fuso horário)
+- [x] **Esqueci minha senha:** link por e-mail, válido por 1 hora e uma vez só; trocar a senha encerra as sessões abertas
 - [x] Serviços (duração e preço), profissionais (quais serviços cada um faz) e horário semanal com intervalos (almoço)
 - [x] **Agenda** em visão de dia e de semana, com resumo e mudança de status: concluído, falta e cancelado (o cliente é avisado)
 - [x] **Bloqueios:** folgas, férias e feriados, de um profissional ou de todos, por dias ou por horas. Os horários somem da página pública, e o painel avisa sobre quem já tinha marcado
@@ -103,7 +104,7 @@ O **profissional** (ex.: o barbeiro funcionário) tem agenda própria, mas não 
 - [x] **Relatórios:** receita, atendimentos, ticket médio e taxa de faltas por período, com comparação ao período anterior, gráfico por dia (com visão em tabela) e rankings por serviço e por profissional
 
 ### Próximos
-Recuperação de senha, edição dos dados do estabelecimento, planos Free/Pro. Detalhes no [roadmap](#roadmap).
+Edição dos dados do estabelecimento, envio de e-mail em produção, planos Free/Pro. Detalhes no [roadmap](#roadmap).
 
 ## Stack
 
@@ -192,6 +193,7 @@ User 1──N Establishment 1──N Professional N──N Service
 
 - **Isolamento entre estabelecimentos (multi-tenant):** toda consulta do painel é filtrada pelo estabelecimento do usuário logado. Testes de integração garantem que o dono A recebe `404` ao tentar acessar recursos do dono B (IDOR).
 - **Autenticação:** senha com bcrypt; JWT com expiração em cookie `httpOnly`, `Secure`, `SameSite=Lax`; resposta igual para e-mail inexistente e senha errada.
+- **Recuperação de senha:** resposta igual exista a conta ou não; token aleatório guardado só como hash, com validade de 1 hora e uso único (garantido por `UPDATE` condicional); trocar a senha derruba as sessões antigas (versão de sessão dentro do JWT).
 - **Rate limit** no login, no cadastro e nas rotas públicas, com `trust proxy` configurado para enxergar o IP real atrás da Vercel e do Render.
 - **Cabeçalhos e CORS:** Helmet e CORS restrito ao domínio do front.
 - **Validação:** toda entrada passa por um schema Zod antes de chegar à regra de negócio.
@@ -280,7 +282,8 @@ cd frontend && npm test
 - [x] Bloqueios de agenda (folgas, feriados, férias)
 - [x] Histórico do cliente (agendamentos anteriores, faltas)
 - [x] Relatório de faturamento por período
-- [ ] Recuperação de senha e verificação de e-mail
+- [x] Recuperação de senha
+- [ ] Verificação de e-mail no cadastro
 - [ ] Edição dos dados do estabelecimento (nome, endereço da página, fuso)
 - [ ] Envio de e-mail em produção (provedor SMTP)
 - [ ] Planos Free (1 profissional, 100 agendamentos/mês) e Pro (ilimitado)
