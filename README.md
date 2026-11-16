@@ -295,4 +295,4 @@ cd frontend && npm test
 
 ---
 
-Feito por **Lucas Brilhante** · [GitHub](https://github.com/lucasbrilhante777)
+Feito por **Lucas Brilhante** · [GitHub](https://github.com/lucasbrilhante777) · [LinkedIn](https://www.linkedin.com/in/lucas-brilhante-0a0a24350/)
