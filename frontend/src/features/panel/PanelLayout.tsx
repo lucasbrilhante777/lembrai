@@ -35,12 +35,14 @@ export function PanelLayout() {
             </button>
           </div>
         </div>
-        <nav aria-label="Painel" className="mx-auto flex max-w-5xl gap-1 px-4">
+        {/* Com muitas abas, o menu rola sozinho na horizontal em telas estreitas, sem empurrar a página. */}
+        <nav aria-label="Painel" className="mx-auto flex max-w-5xl gap-1 overflow-x-auto px-4 [scrollbar-width:thin]">
           <PanelLink to="/painel" end>
             Agenda
           </PanelLink>
           <PanelLink to="/painel/servicos">Serviços</PanelLink>
           <PanelLink to="/painel/profissionais">Profissionais</PanelLink>
+          <PanelLink to="/painel/clientes">Clientes</PanelLink>
           <PanelLink to="/painel/bloqueios">Bloqueios</PanelLink>
           <PanelLink to="/painel/relatorios">Relatórios</PanelLink>
         </nav>
@@ -60,7 +62,7 @@ function PanelLink({ to, end, children }: { to: string; end?: boolean; children:
       to={to}
       end={end}
       className={({ isActive }) =>
-        `border-b-2 px-3 py-2 text-sm font-medium ${isActive ? "border-teal-600 text-teal-700" : "border-transparent text-slate-600 hover:text-slate-900"}`
+        `shrink-0 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium ${isActive ? "border-teal-600 text-teal-700" : "border-transparent text-slate-600 hover:text-slate-900"}`
       }
     >
       {children}

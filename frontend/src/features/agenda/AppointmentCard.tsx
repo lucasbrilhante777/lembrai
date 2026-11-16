@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { formatPrice } from "../../lib/format.ts";
+import { Link } from "react-router";
+import { formatPhone, formatPrice } from "../../lib/format.ts";
 import type { Appointment, OwnerTargetStatus } from "./api.ts";
 import { STATUS_LABEL, STATUS_STYLE, availableActions } from "./status.ts";
 
@@ -26,7 +27,12 @@ export function AppointmentCard({ appointment, now, busy, onChangeStatus }: Prop
         <div>
           <p className="font-semibold text-slate-900">
             {appointment.time}–{appointment.endTime}{" "}
-            <span className={canceled ? "line-through" : ""}>{appointment.customer.name}</span>
+            <Link
+              to={`/painel/clientes/${appointment.customer.id}`}
+              className={`hover:text-teal-700 hover:underline ${canceled ? "line-through" : ""}`}
+            >
+              {appointment.customer.name}
+            </Link>
           </p>
           <p className="text-sm text-slate-600">
             {appointment.service.name} · {appointment.professional.name} · {formatPrice(appointment.priceCents)}
@@ -87,9 +93,3 @@ export function AppointmentCard({ appointment, now, busy, onChangeStatus }: Prop
   );
 }
 
-/** "81999999999" -> "(81) 99999-9999" */
-function formatPhone(digits: string) {
-  const local = digits.length > 11 ? digits.slice(-11) : digits;
-  const match = /^(\d{2})(\d{4,5})(\d{4})$/.exec(local);
-  return match ? `(${match[1]}) ${match[2]}-${match[3]}` : digits;
-}

@@ -25,7 +25,7 @@ function appointment(id: string, status: string, startAt: Date, customer: string
     time: "10:00",
     endTime: "10:30",
     priceCents,
-    customer: { name: customer, email: `${id}@example.com`, phone: "81999999999" },
+    customer: { id: `c-${id}`, name: customer, email: `${id}@example.com`, phone: "81999999999" },
     service: { id: "s1", name: "Corte" },
     professional: { id: "p1", name: "João" },
   };

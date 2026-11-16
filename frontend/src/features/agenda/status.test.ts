@@ -14,7 +14,7 @@ function appointment(status: AppointmentStatus, startAt: string): Appointment {
     time: "09:00",
     endTime: "09:30",
     priceCents: 3500,
-    customer: { name: "Maria", email: "maria@example.com", phone: "81999999999" },
+    customer: { id: "c1", name: "Maria", email: "maria@example.com", phone: "81999999999" },
     service: { id: "s", name: "Corte" },
     professional: { id: "p", name: "João" },
   };

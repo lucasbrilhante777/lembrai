@@ -8,6 +8,7 @@ import { errorHandler, notFoundHandler } from "./middlewares/error-handler.js";
 import { publicRateLimit } from "./middlewares/rate-limit.js";
 import { appointmentsRoutes } from "./routes/appointments.routes.js";
 import { authRoutes } from "./routes/auth.routes.js";
+import { customersRoutes } from "./routes/customers.routes.js";
 import { healthRoutes } from "./routes/health.routes.js";
 import { professionalsRoutes } from "./routes/professionals.routes.js";
 import { publicRoutes } from "./routes/public.routes.js";
@@ -39,6 +40,7 @@ export function createApp() {
   app.use("/appointments", ensureAuthenticated, appointmentsRoutes);
   app.use("/time-offs", ensureAuthenticated, timeOffsRoutes);
   app.use("/reports", ensureAuthenticated, reportsRoutes);
+  app.use("/customers", ensureAuthenticated, customersRoutes);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

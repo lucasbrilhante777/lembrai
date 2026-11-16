@@ -5,6 +5,8 @@ import { RegisterPage } from "./features/auth/RegisterPage.tsx";
 import { RequireAuth } from "./features/auth/RequireAuth.tsx";
 import { BookingPage } from "./features/booking/BookingPage.tsx";
 import { CancelPage } from "./features/cancel/CancelPage.tsx";
+import { CustomerPage } from "./features/customers/CustomerPage.tsx";
+import { CustomersPage } from "./features/customers/CustomersPage.tsx";
 import { PanelLayout } from "./features/panel/PanelLayout.tsx";
 import { ProfessionalsPage } from "./features/professionals/ProfessionalsPage.tsx";
 import { ReportsPage } from "./features/reports/ReportsPage.tsx";
@@ -36,6 +38,8 @@ export function App() {
           <Route path="profissionais" element={<ProfessionalsPage />} />
           <Route path="bloqueios" element={<TimeOffsPage />} />
           <Route path="relatorios" element={<ReportsPage />} />
+          <Route path="clientes" element={<CustomersPage />} />
+          <Route path="clientes/:id" element={<CustomerPage />} />
         </Route>
       </Route>
 
