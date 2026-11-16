@@ -44,6 +44,20 @@ export function formatLongDate(date: string) {
   }).format(calendarDate(date));
 }
 
+/** Instante (ISO, UTC) -> "12/11/2026", no fuso do estabelecimento. */
+export function formatInstantDate(iso: string, timezone: string) {
+  return new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: timezone }).format(
+    new Date(iso),
+  );
+}
+
+/** "81999999999" -> "(81) 99999-9999" */
+export function formatPhone(digits: string) {
+  const local = digits.length > 11 ? digits.slice(-11) : digits;
+  const match = /^(\d{2})(\d{4,5})(\d{4})$/.exec(local);
+  return match ? `(${match[1]}) ${match[2]}-${match[3]}` : digits;
+}
+
 /** "2026-11-12" -> "12/11" */
 export function formatShortDate(date: string) {
   const [, month, day] = date.split("-");

@@ -15,7 +15,7 @@ export type Appointment = {
   time: string;
   endTime: string;
   priceCents: number;
-  customer: { name: string; email: string; phone: string };
+  customer: { id: string; name: string; email: string; phone: string };
   service: { id: string; name: string };
   professional: { id: string; name: string };
 };

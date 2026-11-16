@@ -9,7 +9,7 @@ import * as notifications from "./notifications.service.js";
 // Agenda do dono (rotas com login). Tudo filtrado pelo establishmentId do token, como nos outros módulos.
 
 const appointmentInclude = {
-  customer: { select: { name: true, email: true, phone: true } },
+  customer: { select: { id: true, name: true, email: true, phone: true } }, // id: a agenda abre a ficha do cliente
   service: { select: { id: true, name: true } },
   professional: { select: { id: true, name: true } },
 } satisfies Prisma.AppointmentInclude;

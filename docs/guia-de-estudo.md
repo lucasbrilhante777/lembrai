@@ -25,13 +25,14 @@ Cada seção termina com um bloco **🎤 Em entrevista**, uma resposta curta que
 13. [Máquina de estados](#13-máquina-de-estados)
 14. [Bloqueios de agenda](#14-bloqueios-de-agenda)
 15. [Relatórios e agregação em SQL](#15-relatórios-e-agregação-em-sql)
-16. [Testes](#16-testes)
-17. [Front-end](#17-front-end)
-18. [Conta demo (seed)](#18-conta-demo-seed)
-19. [Deploy e produção](#19-deploy-e-produção)
-20. [Como revisar código feito por IA](#20-como-revisar-código-feito-por-ia)
-21. [Perguntas para revisar](#21-perguntas-para-revisar)
-22. [Glossário](#22-glossário)
+16. [Clientes: busca e paginação](#16-clientes-busca-e-paginação)
+17. [Testes](#17-testes)
+18. [Front-end](#18-front-end)
+19. [Conta demo (seed)](#19-conta-demo-seed)
+20. [Deploy e produção](#20-deploy-e-produção)
+21. [Como revisar código feito por IA](#21-como-revisar-código-feito-por-ia)
+22. [Perguntas para revisar](#22-perguntas-para-revisar)
+23. [Glossário](#23-glossário)
 
 ---
 
@@ -252,7 +253,7 @@ Cliente B: grava 09:00                   ← dois clientes no mesmo horário!
 | **Controle otimista** | Mudança de status pelo dono ([appointments.service.ts](../backend/src/services/appointments.service.ts)) | `UPDATE ... WHERE status = <o que eu li>`. Se outra pessoa mudou no meio, 0 linhas são alteradas, e o dono recebe "acabou de ser alterado" em vez de sobrescrever em silêncio |
 | **Reserva atômica** | Job de lembretes ([reminders.job.ts](../backend/src/jobs/reminders.job.ts)) | `UPDATE ... WHERE reminderSentAt IS NULL`. Só uma execução consegue "reservar" o envio |
 
-**Como foi provado:** testes com `Promise.all` (dois pedidos ao mesmo tempo) e um teste que **força** o caminho da constraint, fazendo a checagem da API "não enxergar" o conflito. Para garantir que esse teste vale, a conversão do erro foi desligada de propósito, e o teste falhou com 500. Isso é um **teste de mutação** (seção 16).
+**Como foi provado:** testes com `Promise.all` (dois pedidos ao mesmo tempo) e um teste que **força** o caminho da constraint, fazendo a checagem da API "não enxergar" o conflito. Para garantir que esse teste vale, a conversão do erro foi desligada de propósito, e o teste falhou com 500. Isso é um **teste de mutação** (seção 17).
 
 🎤 **Em entrevista:** "O risco era dois clientes pegarem o mesmo horário ao mesmo tempo. A checagem na aplicação não resolve isso sozinha, por causa da race condition. Coloquei uma exclusion constraint no Postgres, com ranges de tempo por profissional, e a API traduz a violação em 409. Tenho teste com requisições simultâneas e um teste que força o caminho da constraint."
 
@@ -361,7 +362,30 @@ Tela **Relatórios** do painel ([reports.service.ts](../backend/src/services/rep
 
 ---
 
-## 16. Testes
+## 16. Clientes: busca e paginação
+
+Telas **Clientes** e **ficha do cliente** ([customers.service.ts](../backend/src/services/customers.service.ts), [CustomersPage.tsx](../frontend/src/features/customers/CustomersPage.tsx)).
+
+| Ponto | O que vale saber |
+|---|---|
+| **Paginação por offset** | `skip = (página - 1) × 20`, `take = 20`, mais um `count` para saber o total de páginas. Simples e permite pular para qualquer página. Contra: em tabelas enormes, o banco ainda percorre as linhas puladas |
+| **Paginação por cursor** | A alternativa: "me dê 20 depois do item X". Mais rápida em listas gigantes e estável quando entram itens novos, mas não pula direto para a página 5. Pergunta clássica: "offset ou cursor?" |
+| **Ordem estável** | Ordenar só por nome deixa empatados (dois "Ana Souza") trocando de lugar entre páginas. O `id` como segundo critério de ordenação garante uma ordem fixa |
+| **Busca sem diferenciar maiúsculas** | `contains` com `mode: "insensitive"` (vira `ILIKE` no Postgres) para nome e e-mail. No telefone, a busca usa só os dígitos, porque o banco guarda só os dígitos |
+| **O bug do `contains` vazio** | Se a busca não tem números, o filtro de telefone NÃO pode entrar: `contains: ""` casa com **todos** os clientes. Tem teste, e o teste de mutação provou que ele pega o bug |
+| **N+1, de novo** | Os números de 20 clientes (visitas, faltas, total gasto, última visita, próximo horário) vêm de **2 consultas agrupadas**, e não de 20 × N consultas |
+| **Debounce** | A busca espera a pessoa parar de digitar por 300 ms ([use-debounced-value.ts](../frontend/src/lib/use-debounced-value.ts)). Digitar "bruno" faz **1** chamada à API, não 5 |
+| **Estado derivado em vez de `useEffect`** | A página atual fica guardada junto com a busca a que pertence. Quando a busca muda, ela "vira" 1 sozinha. O jeito ingênuo (zerar a página a cada tecla) causava uma chamada extra à API, e o teste pegou |
+
+**Duas lições que apareceram nesta etapa:**
+- **Os testes passaram e o typecheck falhou:** a agenda passou a mandar o `id` do cliente, e um dado de teste antigo não tinha esse campo. O Vitest não confere tipos; o CI confere (seção 2).
+- **Olhar a tela de novo:** com a aba "Clientes", o menu do painel ficou com 6 abas e passou a empurrar a página para o lado em telas estreitas. Agora só o menu rola.
+
+🎤 **Em entrevista:** "A lista de clientes usa paginação por offset com ordem estável, e eu sei quando trocaria por cursor. A busca é case-insensitive e cuida do caso do filtro vazio, que casaria com todo mundo. Os números de cada cliente vêm de consultas agrupadas, sem N+1. No front, a busca tem debounce, e a paginação usa estado derivado em vez de um useEffect, o que evitou uma chamada desnecessária à API."
+
+---
+
+## 17. Testes
 
 ### Tipos de teste no projeto
 | Tipo | O que testa | Exemplo |
@@ -385,7 +409,7 @@ Tela **Relatórios** do painel ([reports.service.ts](../backend/src/services/rep
 
 ---
 
-## 17. Front-end
+## 18. Front-end
 
 - **React** monta a tela a partir do **estado** (o que está escolhido). Mudou o estado, a tela se atualiza.
 - **Componentes**: peças reutilizáveis (`OptionButton`, `Step`, `Alert` em [ui.tsx](../frontend/src/components/ui.tsx)).
@@ -408,7 +432,7 @@ Tela **Relatórios** do painel ([reports.service.ts](../backend/src/services/rep
 
 ---
 
-## 18. Conta demo (seed)
+## 19. Conta demo (seed)
 
 - **Seed**: script que popula o banco com dados de exemplo ([seed-demo.ts](../backend/src/demo/seed-demo.ts)). Roda com `npm run db:seed`.
 - **Idempotente**: recria só a conta demo e não toca nas outras.
@@ -417,7 +441,7 @@ Tela **Relatórios** do painel ([reports.service.ts](../backend/src/services/rep
 
 ---
 
-## 19. Deploy e produção
+## 20. Deploy e produção
 
 Ver [ADR 0003](adr/0003-deploy-com-proxy-na-vercel.md).
 
@@ -449,7 +473,7 @@ Navegador ──► Vercel (site React)  ──/api/*──►  Render (API Node
 
 ---
 
-## 20. Como revisar código feito por IA
+## 21. Como revisar código feito por IA
 
 Use isto em todo PR:
 
@@ -463,9 +487,9 @@ Use isto em todo PR:
 8. **Algum dado sensível volta na resposta?** (senha, token, dados de outro cliente)
 9. **Testei a parte visível na mão?**
 10. **Tem um jeito mais simples?**
-11. **Tem `!` (não-nulo) ou `as` forçando tipo?** Pergunte por que nunca seria nulo (seção 17).
-12. **Algum erro pode estar sendo "engolido"?** Um `catch` vazio ou um "devolve null se falhar" esconde problemas (seções 16 e 17).
-13. **Tem segredo no código?** Senha, token ou URL de banco têm que vir de variável de ambiente (seção 19).
+11. **Tem `!` (não-nulo) ou `as` forçando tipo?** Pergunte por que nunca seria nulo (seção 18).
+12. **Algum erro pode estar sendo "engolido"?** Um `catch` vazio ou um "devolve null se falhar" esconde problemas (seções 17 e 18).
+13. **Tem segredo no código?** Senha, token ou URL de banco têm que vir de variável de ambiente (seção 20).
 
 Frases úteis para pedir à IA:
 - "Explica essa parte como se eu fosse júnior."
@@ -475,7 +499,7 @@ Frases úteis para pedir à IA:
 
 ---
 
-## 21. Perguntas para revisar
+## 22. Perguntas para revisar
 
 Tente responder sozinho antes de olhar a seção indicada.
 
@@ -500,19 +524,19 @@ Tente responder sozinho antes de olhar a seção indicada.
 19. O que é idempotência? Como o job garante um lembrete só? *(11)*
 20. O que acontece se o e-mail de confirmação falhar? *(12)*
 21. Desenhe a máquina de estados do agendamento. *(13)*
-22. Diferença entre teste unitário e de integração? *(16)*
-23. O que é teste de mutação? *(16)*
-24. Por que os testes usam um banco separado? *(16)*
-25. Para que serve o proxy `/api` do front? *(17)*
-26. Esconder um botão no front protege os dados? Onde fica a proteção de verdade? *(17)*
-27. Qual o risco de usar `!` no TypeScript? Dê o exemplo do projeto. *(17)*
-28. Por que não usar float para dinheiro? *(8, 17)*
-29. O que é um "falso verde" em testes e como o projeto evita? *(16)*
-30. Por que a Vercel repassa `/api` para o Render em vez de o front chamar o Render direto? *(19)*
-31. O que é `trust proxy` e o que quebraria sem ele? *(19)*
-32. O que acontece com o job de lembretes quando a API "dorme" no plano gratuito? *(11, 19)*
-33. Onde ficam os segredos (senha do banco, segredo do JWT) em produção? *(19)*
-34. Por que dar F5 em `/painel` daria 404 sem configuração, e como o projeto resolve? *(19)*
+22. Diferença entre teste unitário e de integração? *(17)*
+23. O que é teste de mutação? *(17)*
+24. Por que os testes usam um banco separado? *(17)*
+25. Para que serve o proxy `/api` do front? *(18)*
+26. Esconder um botão no front protege os dados? Onde fica a proteção de verdade? *(18)*
+27. Qual o risco de usar `!` no TypeScript? Dê o exemplo do projeto. *(18)*
+28. Por que não usar float para dinheiro? *(8, 18)*
+29. O que é um "falso verde" em testes e como o projeto evita? *(17)*
+30. Por que a Vercel repassa `/api` para o Render em vez de o front chamar o Render direto? *(20)*
+31. O que é `trust proxy` e o que quebraria sem ele? *(20)*
+32. O que acontece com o job de lembretes quando a API "dorme" no plano gratuito? *(11, 20)*
+33. Onde ficam os segredos (senha do banco, segredo do JWT) em produção? *(20)*
+34. Por que dar F5 em `/painel` daria 404 sem configuração, e como o projeto resolve? *(20)*
 35. Como um bloqueio afeta os horários livres sem mudar a função de cálculo? *(14)*
 36. Por que criar um bloqueio não cancela os agendamentos do período? *(14)*
 37. O que é uma união discriminada? Onde o projeto usa? *(14)*
@@ -522,10 +546,15 @@ Tente responder sozinho antes de olhar a seção indicada.
 41. Como o `$queryRaw` do projeto evita SQL injection? *(15)*
 42. Por que o relatório precisou de SQL puro? *(10, 15)*
 43. Como o relatório trata período sem atendimentos? *(15)*
+44. Paginação por offset ou por cursor: diferenças e quando usar cada uma? *(16)*
+45. Por que ordenar por nome E por id na lista paginada? *(16)*
+46. Qual o bug de um filtro `contains` com texto vazio? *(16)*
+47. O que é debounce e por que a busca usa? *(16)*
+48. O que é estado derivado e quando ele é melhor que um useEffect? *(16)*
 
 ---
 
-## 22. Glossário
+## 23. Glossário
 
 | Termo | Significado |
 |---|---|
@@ -539,7 +568,9 @@ Tente responder sozinho antes de olhar a seção indicada.
 | **Constraint** | Regra garantida pelo banco (UNIQUE, CHECK, EXCLUDE) |
 | **CORS** | Regra do navegador sobre chamadas entre sites diferentes |
 | **CSRF** | Ataque em que outro site usa o seu cookie para fazer requisições |
+| **Debounce** | Esperar o valor parar de mudar por um tempo antes de agir (ex.: buscar só quando a pessoa para de digitar) |
 | **DST** | Horário de verão |
+| **Estado derivado** | Valor calculado a partir de outros estados durante a renderização, em vez de guardado e sincronizado com useEffect |
 | **Falso verde** | Teste que passa sem testar de verdade |
 | **Flaky** | Teste que às vezes passa e às vezes falha sem mudança no código |
 | **Função impura** | Função cujo resultado depende de algo de fora (relógio, rede) ou que altera algo de fora |
@@ -557,6 +588,7 @@ Tente responder sozinho antes de olhar a seção indicada.
 | **Multi-tenant** | Vários clientes no mesmo sistema, com dados isolados |
 | **Non-null assertion (`!`)** | Dizer ao TypeScript "isto nunca é nulo". Desliga a checagem, então use com desconfiança |
 | **ORM** | Biblioteca que mapeia tabelas para código (Prisma) |
+| **Paginação (offset / cursor)** | Dividir uma lista em páginas: pulando N itens (offset) ou continuando depois de um item conhecido (cursor) |
 | **PR** | Pull Request: pedido para juntar uma branch na main |
 | **Proxy reverso / rewrite** | Servidor que recebe a requisição e repassa para outro (Vercel → Render) |
 | **N+1** | Fazer 1 consulta para a lista e mais 1 para cada item dela, em vez de buscar tudo de uma vez |
