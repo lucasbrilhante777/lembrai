@@ -60,6 +60,30 @@ O caminho de um agendamento:
 
 🎤 **Em entrevista:** "É um SaaS de agendamento. Front em React, API REST em Node com Express e TypeScript, e PostgreSQL com Prisma. As regras mais críticas, como não ter dois clientes no mesmo horário, são garantidas pelo próprio banco, e a API traduz os erros em respostas amigáveis. Um job periódico envia os lembretes por e-mail."
 
+### Pitch de 1 minuto ("me fala do seu projeto")
+
+Quase toda entrevista começa assim. Treine em voz alta até sair natural, nesta ordem: **problema → solução → o que tem de difícil → como você garante qualidade**.
+
+> "O Lembrai é um sistema de agendamento para pequenos negócios, como barbearias, que hoje se organizam por WhatsApp e caderno. O cliente marca sozinho por um link, sem criar conta, e recebe lembrete por e-mail, o que reduz faltas. O dono tem um painel com agenda, clientes, bloqueios e relatório de faturamento.
+>
+> A parte mais interessante é a de agenda: garanti que dois clientes nunca pegam o mesmo horário, nem clicando no mesmo instante, com uma constraint no próprio Postgres, e tratei fuso horário guardando tudo em UTC. Também cuidei de isolamento entre estabelecimentos, lembrete que nunca duplica e relatórios agregados no banco.
+>
+> Tem mais de 250 testes, CI obrigatório e deploy automático na Vercel e no Render. Está no ar, com uma conta demo."
+
+**Depois do pitch, o entrevistador escolhe um tema e aprofunda.** Os mais prováveis, e onde estudar cada um:
+
+| Se perguntarem... | Estude |
+|---|---|
+| "Como você garante que não há horário duplicado?" | Seção 9 e ADR 0001 |
+| "Como lida com fuso horário?" | Seção 10 e ADR 0002 |
+| "Como funciona o login? É seguro?" | Seções 6 e 7 |
+| "Como você testa?" | Seção 17 |
+| "Como foi o deploy?" | Seção 20 e ADR 0003 |
+| "O que você faria diferente / próximos passos?" | Roadmap do README e os "limites aceitos" (seções 14 e 16) |
+| "Qual foi o bug mais difícil?" | O "falso verde" dos testes, o proxy do Vite sem configuração e o `!` que quebrava o logout (seções 17 e 18) |
+
+> **Seja honesto sobre a IA.** Se perguntarem como você construiu, diga que usou IA como par de programação e que revisou cada PR, decidiu os trade-offs e entende cada parte. Essa é justamente a habilidade que o guia treina. Entrevistador valoriza mais isso do que fingir que escreveu tudo sozinho.
+
 ---
 
 ## 2. Git, Pull Request, CI e merge
