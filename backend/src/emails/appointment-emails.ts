@@ -20,12 +20,20 @@ export type AppointmentEmailData = {
   attendeeName: string | null;
   /** Página pública do estabelecimento, para marcar de novo. */
   bookingUrl: string;
+  /** E-mail do dono: a resposta do cliente vai para ele, não para o Lembrai. */
+  replyTo: string;
 };
+
+// Quem recebe deve reconhecer o negócio, não o Lembrai: "Barbearia X via Lembrai" no remetente.
+// E, se o cliente responder ("posso chegar 10 min atrasado?"), a resposta cai no e-mail do dono.
+function envelope(data: AppointmentEmailData) {
+  return { to: data.to, fromName: `${data.establishmentName} via Lembrai`, replyTo: data.replyTo };
+}
 
 export function confirmationEmail(data: AppointmentEmailData): EmailMessage {
   const when = formatWhen(data.startAt, data.timezone);
   return {
-    to: data.to,
+    ...envelope(data),
     subject: `Agendamento confirmado: ${data.serviceName} em ${data.establishmentName}`,
     html: layout(`
       <p>Olá, ${escapeHtml(data.customerName)}!</p>
@@ -49,7 +57,7 @@ export function confirmationEmail(data: AppointmentEmailData): EmailMessage {
 export function reminderEmail(data: AppointmentEmailData): EmailMessage {
   const when = formatWhen(data.startAt, data.timezone);
   return {
-    to: data.to,
+    ...envelope(data),
     // Data explícita, não "amanhã": se o job atrasar, o lembrete pode sair no mesmo dia do horário.
     subject: `Lembrete: ${data.serviceName} em ${data.establishmentName}, ${formatShortWhen(data.startAt, data.timezone)}`,
     html: layout(`
@@ -72,7 +80,7 @@ export function reminderEmail(data: AppointmentEmailData): EmailMessage {
 export function canceledByEstablishmentEmail(data: AppointmentEmailData): EmailMessage {
   const when = formatWhen(data.startAt, data.timezone);
   return {
-    to: data.to,
+    ...envelope(data),
     subject: `Agendamento cancelado: ${data.serviceName} em ${data.establishmentName}, ${formatShortWhen(data.startAt, data.timezone)}`,
     html: layout(`
       <p>Olá, ${escapeHtml(data.customerName)}.</p>
@@ -151,7 +159,7 @@ function layout(content: string) {
 <html lang="pt-BR">
   <body style="font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#222;max-width:560px;margin:0 auto;padding:24px">
     ${content}
-    <p style="margin-top:32px;font-size:12px;color:#999">Enviado pelo Lembrai. Você recebeu este e-mail porque agendou um horário.</p>
+    <p style="margin-top:32px;font-size:12px;color:#999">Enviado pelo Lembrai. Você recebeu este e-mail porque agendou um horário. Para falar com o estabelecimento, é só responder.</p>
   </body>
 </html>`;
 }
