@@ -28,7 +28,12 @@ export async function sendCancellationByEstablishment(appointmentId: string) {
 async function loadEmailData(appointmentId: string): Promise<AppointmentEmailData> {
   const appointment = await prisma.appointment.findUniqueOrThrow({
     where: { id: appointmentId },
-    include: { customer: true, service: true, professional: true, establishment: true },
+    include: {
+      customer: true,
+      service: true,
+      professional: true,
+      establishment: { include: { user: { select: { email: true } } } },
+    },
   });
 
   return {
@@ -43,5 +48,6 @@ async function loadEmailData(appointmentId: string): Promise<AppointmentEmailDat
     cancelUrl: cancelUrl(appointment.cancelToken),
     attendeeName: appointment.attendeeName,
     bookingUrl: `${env.FRONTEND_URL}/agenda/${appointment.establishment.slug}`,
+    replyTo: appointment.establishment.user.email,
   };
 }

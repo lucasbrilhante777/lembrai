@@ -6,7 +6,24 @@ export type EmailMessage = {
   subject: string;
   html: string;
   text: string;
+  /** Nome que aparece no remetente. O endereço é sempre o de EMAIL_FROM (o único verificado no provedor). */
+  fromName?: string;
+  /** Para onde vai a resposta, se a pessoa clicar em "Responder". */
+  replyTo?: string;
 };
+
+/**
+ * Separa `Lembrai <contato@dominio.com>` em nome e endereço.
+ * O nome pode mudar por e-mail; o endereço não: o provedor só aceita remetentes verificados
+ * (e, com domínio próprio, o SPF/DKIM do domínio).
+ */
+export function parseFrom(value: string) {
+  const match = value.match(/^\s*"?([^"<]*?)"?\s*<([^<>\s]+@[^<>\s]+)>\s*$/);
+  if (match) return { name: match[1] || "Lembrai", address: match[2]! };
+  return { name: "Lembrai", address: value.trim() };
+}
+
+const defaultFrom = parseFrom(env.EMAIL_FROM);
 
 // Em dev, sem configuração, usa o Mailpit do docker-compose. Em produção, sem SMTP_HOST,
 // o envio fica DESLIGADO: o sistema funciona normalmente, só não manda e-mails.
@@ -46,7 +63,11 @@ export const mailer = {
   async send(message: EmailMessage): Promise<"sent" | "skipped"> {
     if (skipReserved && isReservedAddress(message.to)) return "skipped";
 
-    await transport.sendMail({ from: env.EMAIL_FROM, ...message });
+    const { fromName, ...rest } = message;
+    // Nome e endereço em objeto (não montados numa string): o Nodemailer codifica o nome com segurança.
+    // O nome vem do cadastro do estabelecimento; numa string, um nome com aspas, "<" ou quebra de
+    // linha poderia bagunçar (ou injetar) cabeçalhos do e-mail.
+    await transport.sendMail({ ...rest, from: { name: fromName ?? defaultFrom.name, address: defaultFrom.address } });
     return "sent";
   },
 };

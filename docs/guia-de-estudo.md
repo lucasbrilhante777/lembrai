@@ -369,6 +369,8 @@ Outros detalhes: `noOverlap` (uma rodada não começa por cima da anterior), `tr
 - **Provedor SMTP**: em produção a API manda pelo **Brevo** (plano grátis: 300 e-mails/dia). As credenciais ficam só no painel do Render (`SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`...), nunca no código.
 - **Remetente verificado**: o provedor só aceita enviar "em nome de" um endereço que você provou ser seu. Sem domínio próprio, os e-mails podem cair no spam: para um domínio próprio, configuraríamos **SPF, DKIM e DMARC** (registros DNS que provam que o servidor pode mandar em nome do domínio).
 - **Bounce e reputação**: e-mail para endereço que não existe "volta" (*bounce*). Muitos bounces = cara de spammer, e o provedor bloqueia a conta. A demo usa `@example.com`, domínio **reservado** (RFC 2606) onde não existe caixa nenhuma, e cada deploy recria dezenas de agendamentos com lembretes. Por isso o [mailer.ts](../backend/src/lib/mailer.ts) **pula endereços reservados** fora do dev (no dev tudo vai para o Mailpit, então dá para ver os e-mails da demo).
+- **Remetente com o nome do negócio**: o cliente da barbearia não conhece o Lembrai. Os e-mails de agendamento saem como **"Barbearia X via Lembrai"**, e o **Reply-To** é o e-mail do dono: se o cliente responder ("posso chegar 10 min atrasado?"), a mensagem cai com quem pode resolver. O *endereço* do remetente continua fixo (o único verificado no provedor); só o *nome* muda.
+- **Injeção de cabeçalho**: o nome do estabelecimento é digitado pelo usuário. Montar `"${nome}" <endereço>` numa string deixaria um nome com aspas ou quebra de linha bagunçar os cabeçalhos do e-mail (*header injection*). Por isso o remetente vai como objeto `{ name, address }`, e o Nodemailer codifica o nome.
 - **Abuso**: a página pública aceita qualquer e-mail, então alguém poderia usar o agendamento para mandar e-mails a terceiros. Segura isso: rate limit por IP, limite de 3 agendamentos ativos por e-mail e o teto diário do provedor.
 
 🎤 **Em entrevista:** "Os e-mails escapam o HTML dos dados do usuário, uma falha no envio não desfaz o agendamento e o link de cancelamento usa GET só para mostrar, com o cancelamento num POST, por causa dos leitores de e-mail que abrem links."
@@ -636,6 +638,7 @@ Tente responder sozinho antes de olhar a seção indicada.
 55. JWT não dá para revogar. Como o Lembrai derruba as sessões antigas depois da troca de senha, e qual o custo disso? *(6)*
 56. O que é bounce, e por que a API não manda e-mail para `@example.com` em produção? *(12)*
 57. O que são SPF, DKIM e DMARC, em uma frase cada? *(12)*
+58. Por que o nome do remetente muda por estabelecimento, mas o endereço não? E para que serve o Reply-To? *(12)*
 
 ---
 

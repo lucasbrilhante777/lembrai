@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isReservedAddress, mailer } from "../src/lib/mailer.js";
+import { isReservedAddress, mailer, parseFrom } from "../src/lib/mailer.js";
 
 // A conta demo usa @example.com. Com o SMTP ligado em produção, mandar para esses endereços
 // só geraria devoluções (bounces) e queimaria a reputação da conta no provedor.
@@ -25,6 +25,17 @@ describe("endereços reservados (RFC 2606 / 6761)", () => {
       expect(isReservedAddress(email)).toBe(false);
     },
   );
+});
+
+describe("EMAIL_FROM: separa nome e endereço", () => {
+  it.each([
+    ["Lembrai <contato@lembrai.com.br>", { name: "Lembrai", address: "contato@lembrai.com.br" }],
+    ['"Lembrai App" <contato@lembrai.com.br>', { name: "Lembrai App", address: "contato@lembrai.com.br" }],
+    ["<contato@lembrai.com.br>", { name: "Lembrai", address: "contato@lembrai.com.br" }],
+    ["contato@lembrai.com.br", { name: "Lembrai", address: "contato@lembrai.com.br" }],
+  ])("%s", (value, expected) => {
+    expect(parseFrom(value)).toEqual(expected);
+  });
 });
 
 describe("mailer.send", () => {

@@ -53,6 +53,18 @@ describe("e-mail de confirmação", () => {
     expect(email.html).toContain(`/cancelar/${cancelToken}`);
   });
 
+  it("sai com o nome do negócio no remetente, e a resposta vai para o dono", async () => {
+    const send = vi.spyOn(mailer, "send");
+    const setup = await setupEstablishment(app);
+    const owner = await prisma.user.findFirstOrThrow();
+
+    await book(setup);
+
+    const email = send.mock.calls[0]![0] as EmailMessage;
+    expect(email.fromName).toBe("Barbearia Teste via Lembrai");
+    expect(email.replyTo).toBe(owner.email);
+  });
+
   it("escapa o HTML de dados digitados pelo cliente", async () => {
     const send = vi.spyOn(mailer, "send");
     const setup = await setupEstablishment(app);
