@@ -5,6 +5,7 @@ import { prisma } from "../lib/prisma.js";
 import type { ListAppointmentsQuery, UpdateStatusInput } from "../schemas/appointments.schemas.js";
 import { addDays, formatLocalTime, localDateOf, localDateTimeToUtc } from "../utils/zoned-date.js";
 import * as notifications from "./notifications.service.js";
+import { runInBackground } from "../lib/background.js";
 
 // Agenda do dono (rotas com login). Tudo filtrado pelo establishmentId do token, como nos outros módulos.
 
@@ -60,9 +61,8 @@ export async function updateStatus(
     if (count === 0) throw new AppError("Esse agendamento acabou de ser alterado. Atualize a agenda.", 409);
 
     if (input.status === "CANCELED") {
-      await notifications
-        .sendCancellationByEstablishment(appointment.id)
-        .catch((err: unknown) => console.error("Falha ao avisar o cliente do cancelamento:", err));
+      // Não espera o e-mail: o cancelamento já está salvo (ver lib/background.ts).
+      runInBackground("e-mail de cancelamento", () => notifications.sendCancellationByEstablishment(appointment.id));
     }
   }
 
