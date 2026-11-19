@@ -1,6 +1,7 @@
 import request from "supertest";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "../src/app.js";
+import { settleBackgroundTasks } from "../src/lib/background.js";
 import { type EmailMessage, mailer } from "../src/lib/mailer.js";
 import { prisma } from "../src/lib/prisma.js";
 import { resetDatabase } from "./helpers/db.js";
@@ -40,6 +41,7 @@ describe("e-mail de confirmação", () => {
     const res = await book(setup);
 
     expect(res.status).toBe(201);
+    await settleBackgroundTasks();
     expect(send).toHaveBeenCalledOnce();
     const email = send.mock.calls[0]![0] as EmailMessage;
     const { cancelToken } = await prisma.appointment.findUniqueOrThrow({ where: { id: res.body.id } });
@@ -59,6 +61,7 @@ describe("e-mail de confirmação", () => {
     const owner = await prisma.user.findFirstOrThrow();
 
     await book(setup);
+    await settleBackgroundTasks();
 
     const email = send.mock.calls[0]![0] as EmailMessage;
     expect(email.fromName).toBe("Barbearia Teste via Lembrai");
@@ -70,10 +73,27 @@ describe("e-mail de confirmação", () => {
     const setup = await setupEstablishment(app);
 
     await book(setup, '<a href="https://golpe.com">Maria</a>');
+    await settleBackgroundTasks();
 
     const email = send.mock.calls[0]![0] as EmailMessage;
     expect(email.html).not.toContain('<a href="https://golpe.com">');
     expect(email.html).toContain("&lt;a href=&quot;https://golpe.com&quot;&gt;Maria&lt;/a&gt;");
+  });
+
+  it("a resposta não espera o e-mail: SMTP travado não trava o agendamento", async () => {
+    // Simula o que aconteceu em produção: a porta do SMTP bloqueada, e o envio pendurado.
+    let releaseEmail: (() => void) | undefined;
+    vi.spyOn(mailer, "send").mockImplementation(
+      () => new Promise((resolve) => (releaseEmail = () => resolve("sent"))),
+    );
+    const setup = await setupEstablishment(app);
+
+    const res = await book(setup);
+
+    expect(res.status).toBe(201);
+    // O envio começou, mas ainda não terminou (e a resposta já chegou).
+    await vi.waitFor(() => expect(releaseEmail).toBeDefined());
+    releaseEmail?.();
   });
 
   it("se o envio falhar, o agendamento continua salvo", async () => {

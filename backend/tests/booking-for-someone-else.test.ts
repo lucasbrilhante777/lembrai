@@ -1,6 +1,7 @@
 import request from "supertest";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "../src/app.js";
+import { settleBackgroundTasks } from "../src/lib/background.js";
 import { type EmailMessage, mailer } from "../src/lib/mailer.js";
 import { prisma } from "../src/lib/prisma.js";
 import { MAX_ACTIVE_APPOINTMENTS_PER_CUSTOMER } from "../src/services/public.service.js";
@@ -132,6 +133,7 @@ describe("o nome aparece onde importa", () => {
     const send = vi.spyOn(mailer, "send");
     await book(setup.professionalId, "09:00");
     await book(pedroId, "09:00", { attendeeName: "Pedrinho" });
+    await settleBackgroundTasks();
 
     const agenda = await setup.agent.get(`/appointments?from=${date}&to=${date}`);
     const customerId = agenda.body.appointments[0].customer.id;

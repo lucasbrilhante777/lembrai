@@ -30,7 +30,8 @@ services:
       - key: JOBS_ENABLED
         value: "true"
       # E-mail (Brevo). Preenchidos à mão no painel do Render, porque SMTP_USER/SMTP_PASS são segredos:
-      #   SMTP_HOST=smtp-relay.brevo.com  SMTP_PORT=587  SMTP_SECURE=false
+      #   SMTP_HOST=smtp-relay.brevo.com  SMTP_PORT=2525  SMTP_SECURE=false
+      #   (2525: o plano grátis do Render bloqueia as portas 25, 465 e 587)
       #   SMTP_USER=<login SMTP do Brevo>  SMTP_PASS=<chave SMTP do Brevo>
       #   EMAIL_FROM="Lembrai <remetente verificado no Brevo>"
       # Sem SMTP_HOST, o envio fica desligado e o resto funciona (ver backend/src/lib/mailer.ts).

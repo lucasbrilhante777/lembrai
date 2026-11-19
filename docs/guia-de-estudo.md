@@ -371,6 +371,12 @@ Outros detalhes: `noOverlap` (uma rodada não começa por cima da anterior), `tr
 - **Bounce e reputação**: e-mail para endereço que não existe "volta" (*bounce*). Muitos bounces = cara de spammer, e o provedor bloqueia a conta. A demo usa `@example.com`, domínio **reservado** (RFC 2606) onde não existe caixa nenhuma, e cada deploy recria dezenas de agendamentos com lembretes. Por isso o [mailer.ts](../backend/src/lib/mailer.ts) **pula endereços reservados** fora do dev (no dev tudo vai para o Mailpit, então dá para ver os e-mails da demo).
 - **Remetente com o nome do negócio**: o cliente da barbearia não conhece o Lembrai. Os e-mails de agendamento saem como **"Barbearia X via Lembrai"**, e o **Reply-To** é o e-mail do dono: se o cliente responder ("posso chegar 10 min atrasado?"), a mensagem cai com quem pode resolver. O *endereço* do remetente continua fixo (o único verificado no provedor); só o *nome* muda.
 - **Injeção de cabeçalho**: o nome do estabelecimento é digitado pelo usuário. Montar `"${nome}" <endereço>` numa string deixaria um nome com aspas ou quebra de linha bagunçar os cabeçalhos do e-mail (*header injection*). Por isso o remetente vai como objeto `{ name, address }`, e o Nodemailer codifica o nome.
+- **Bug real de produção: porta SMTP bloqueada.** Ao ligar o Brevo, o agendamento passou a dar erro 502 (resposta de erro do proxy) depois de 2 minutos, **mas o horário ficava salvo**. A causa: o plano grátis do Render bloqueia as portas de e-mail 25, 465 e 587 (mudança de 2025). A conexão ficava pendurada até o *timeout* (tempo máximo de espera) do Nodemailer, que por padrão é de 2 minutos, e a rota esperava o e-mail antes de responder.
+  - **Correção na infraestrutura:** usar a porta **2525**, que o Brevo aceita e o Render não bloqueia (ou o plano pago).
+  - **Correção no código** (vale mais que a da porta): o e-mail sai **em segundo plano** ([background.ts](../backend/src/lib/background.ts)). A resposta não depende de um serviço externo lento, e o SMTP tem *timeout* curto (10 s).
+  - **Como foi achado:** um agendamento de teste em produção, olhando a API segundo a segundo. O POST levou 120 s e voltou 502, mas o agendamento estava no banco. 120 s é exatamente o timeout padrão do Nodemailer: a pista estava no número.
+  - **Lição:** nunca deixe a resposta ao usuário esperando um serviço externo que não é essencial para ela. E coloque timeout em toda chamada de rede.
+- **Tarefas em segundo plano nos testes**: "disparar e esquecer" deixa o teste instável, porque o e-mail pode sair depois do teste conferir, ou depois do banco ser limpo para o próximo. Por isso o `runInBackground` registra as tarefas, e os testes chamam `settleBackgroundTasks()` para esperar todas. Há um teste que simula o SMTP travado e confere que o agendamento responde mesmo assim (e ele reprova se o `await` voltar).
 - **Abuso**: a página pública aceita qualquer e-mail, então alguém poderia usar o agendamento para mandar e-mails a terceiros. Segura isso: rate limit por IP, limite de 3 agendamentos ativos por e-mail e o teto diário do provedor.
 
 🎤 **Em entrevista:** "Os e-mails escapam o HTML dos dados do usuário, uma falha no envio não desfaz o agendamento e o link de cancelamento usa GET só para mostrar, com o cancelamento num POST, por causa dos leitores de e-mail que abrem links."
@@ -639,6 +645,8 @@ Tente responder sozinho antes de olhar a seção indicada.
 56. O que é bounce, e por que a API não manda e-mail para `@example.com` em produção? *(12)*
 57. O que são SPF, DKIM e DMARC, em uma frase cada? *(12)*
 58. Por que o nome do remetente muda por estabelecimento, mas o endereço não? E para que serve o Reply-To? *(12)*
+59. Conte o bug do SMTP em produção: o sintoma, como foi investigado, a causa e as duas correções. *(12)*
+60. Por que mandar e-mail "em segundo plano" e qual o cuidado que isso exige nos testes? *(12)*
 
 ---
 

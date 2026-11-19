@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { computeAvailableSlots } from "../domain/availability.js";
 import { AppError } from "../errors/app-error.js";
+import { runInBackground } from "../lib/background.js";
 import { isAppointmentOverlapError } from "../lib/db-errors.js";
 import { prisma } from "../lib/prisma.js";
 import type { AvailabilityQuery, CreateAppointmentInput } from "../schemas/public.schemas.js";
@@ -168,11 +169,10 @@ export async function createAppointment(slug: string, input: CreateAppointmentIn
     throw err;
   }
 
-  // O horário já está garantido no banco. Se o e-mail falhar (SMTP fora do ar, por exemplo),
-  // NÃO desfazemos o agendamento: só registramos o erro. O lembrete de 24h ainda vai tentar avisar.
-  await notifications
-    .sendConfirmation(appointment.id)
-    .catch((err: unknown) => console.error("Falha ao enviar e-mail de confirmação:", err));
+  // O horário já está garantido no banco. O e-mail sai em segundo plano: a resposta não espera
+  // o SMTP, e uma falha no envio NÃO desfaz o agendamento (só vai para o log).
+  // O lembrete de 24h ainda vai tentar avisar. Ver lib/background.ts.
+  runInBackground("e-mail de confirmação", () => notifications.sendConfirmation(appointment.id));
 
   // O cancelToken NÃO volta na resposta: ele só vai por e-mail para o cliente.
   return {

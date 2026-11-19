@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { env } from "../config/env.js";
 import { passwordResetEmail } from "../emails/password-reset-email.js";
 import { AppError } from "../errors/app-error.js";
+import { runInBackground } from "../lib/background.js";
 import { mailer } from "../lib/mailer.js";
 import { prisma } from "../lib/prisma.js";
 import type { ForgotPasswordInput, ResetPasswordInput } from "../schemas/auth.schemas.js";
@@ -38,16 +39,16 @@ export async function requestPasswordReset({ email }: ForgotPasswordInput) {
 
   // Sem await: esperar o SMTP faria a resposta demorar mais quando o e-mail existe,
   // e o tempo de resposta entregaria a informação que a mensagem genérica esconde.
-  mailer
-    .send(
+  runInBackground("e-mail de redefinição de senha", () =>
+    mailer.send(
       passwordResetEmail({
         to: user.email,
         name: user.name,
         resetUrl: `${env.FRONTEND_URL}/redefinir-senha/${token}`,
         expiresInMinutes: RESET_TOKEN_TTL_MINUTES,
       }),
-    )
-    .catch((err: unknown) => console.error("Falha ao enviar e-mail de redefinição de senha:", err));
+    ),
+  );
 }
 
 /** Troca a senha usando o token do e-mail. Vale uma vez só, até expirar. */

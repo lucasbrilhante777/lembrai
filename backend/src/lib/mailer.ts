@@ -38,6 +38,11 @@ const transport =
         port: env.SMTP_PORT,
         secure: env.SMTP_SECURE,
         auth: env.SMTP_USER ? { user: env.SMTP_USER, pass: env.SMTP_PASS } : undefined,
+        // Os padrões do Nodemailer esperam até 2 minutos para conectar. Com a porta bloqueada
+        // (plano grátis do Render bloqueia 25, 465 e 587), cada envio ficaria pendurado esse tempo todo.
+        connectionTimeout: 10_000,
+        greetingTimeout: 10_000,
+        socketTimeout: 20_000,
       });
 
 if (env.NODE_ENV === "production" && !smtpHost) {
